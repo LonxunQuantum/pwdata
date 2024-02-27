@@ -9,7 +9,9 @@ setuptools.setup(
     author="LonxunQuantum",
     author_email="lonxun@pwmat.com",
     description="pwdata is a data pre-processing tool for PWMLFF, which can be used to extract features and labels. At the same time, it provides convenient interfaces for data conversion between different software.",
-    url="https://github.com/yeahooool/pwdata",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/LonxunQuantum/pwdata",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
