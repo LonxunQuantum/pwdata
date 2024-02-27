@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pwdata", 
-    version="0.0.1",
+    version="2024.2.27",
     author="LonxunQuantum",
     author_email="lonxun@pwmat.com",
     description="pwdata is a data pre-processing tool for PWMLFF, which can be used to extract features and labels. At the same time, it provides convenient interfaces for data conversion between different software.",
@@ -15,8 +15,8 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: GNU GPLv3",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.11',
+    python_requires='>=3.9',
 )
