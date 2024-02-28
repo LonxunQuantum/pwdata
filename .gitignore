@@ -1,3 +1,4 @@
 dist/
 pwdata.egg-info/
-__pycache__
+__pycache__/
+./setup.py
