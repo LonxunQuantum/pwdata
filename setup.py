@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pwdata", 
-    version="2024.2.27",
+    version="2024.2.28",
     author="LonxunQuantum",
     author_email="lonxun@pwmat.com",
-    description="pwdata is a data pre-processing tool for PWMLFF, which can be used to extract features and labels. At the same time, it provides convenient interfaces for data conversion between different software.",
+    description="pwdata is a data pre-processing tool for PWMLFF, which can be used to extract features and labels. It also provides convenient interfaces for data conversion between different software.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/LonxunQuantum/pwdata",
