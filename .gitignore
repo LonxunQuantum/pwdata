@@ -1,4 +1,7 @@
+# Generated files
 dist/
+build/
 pwdata.egg-info/
 __pycache__/
-./setup.py
+pwdata/__pycache__/
+setup.py
