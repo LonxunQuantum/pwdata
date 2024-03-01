@@ -1,13 +1,13 @@
 import os
 
-from poscar import POSCAR
-from atomconfig import CONFIG
-from build.supercells import make_supercell
-from pertub.perturbation import BatchPerturbStructure
-from pertub.scale import BatchScaleCell
-from pwdata import Configs
-from lammpsdata import LMP
-from dump import DUMP
+from pwdata.poscar import POSCAR
+from pwdata.atomconfig import CONFIG
+from pwdata.build.supercells import make_supercell
+from pwdata.pertub.perturbation import BatchPerturbStructure
+from pwdata.pertub.scale import BatchScaleCell
+from pwdata.main import Configs
+from pwdata.lammpsdata import LMP
+from pwdata.dump import DUMP
 
 def extract_config(config_path:str, format:str, pbc:list[int]=[1,1,1], atom_names: list[str] = None):
     if format.lower() == "config" or format.lower() == "pwmat":

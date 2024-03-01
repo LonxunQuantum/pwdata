@@ -6,31 +6,28 @@ from typing import (List, Union, Optional)
 # import time
 # os.chdir(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from image import Image
-from movement import MOVEMENT
-from outcar import OUTCAR
-from poscar import POSCAR
-from atomconfig import CONFIG
-from dump import DUMP
-from lammpsdata import LMP
-from cp2kdata import CP2KMD, CP2KSCF
-from movement_saver import save_to_movement
-from extendedxyz import save_to_extxyz
-from build.supercells import make_supercell
-from pertub.perturbation import BatchPerturbStructure
-from pertub.scale import BatchScaleCell
-from calculators.const import elements
+from pwdata.movement import MOVEMENT
+from pwdata.outcar import OUTCAR
+from pwdata.poscar import POSCAR
+from pwdata.atomconfig import CONFIG
+from pwdata.dump import DUMP
+from pwdata.lammpsdata import LMP
+from pwdata.cp2kdata import CP2KMD, CP2KSCF
+from pwdata.movement_saver import save_to_movement
+from pwdata.extendedxyz import save_to_extxyz
+from pwdata.datasets_saver import save_to_dataset, get_pw, save_to_raw, save_to_npy
+from pwdata.build.write_struc import write_config, write_vasp, write_lammps
 
 class Save_Data(object):
     def __init__(self, data_path, datasets_path = "./PWdata", train_data_path = "train", valid_data_path = "valid", 
                  train_ratio = None, random = True, seed = 2024, format = None, retain_raw = False, atom_names:list[str] = None) -> None:
-        if format.lower() == "config":
+        if format.lower() == "pwmat/config":
             self.image_data = CONFIG(data_path)
-        elif format.lower() == "poscar":
+        elif format.lower() == "vasp/poscar":
             self.image_data = POSCAR(data_path)
-        elif format.lower() == "dump":
+        elif format.lower() == "lammps/dump":
             self.image_data = DUMP(data_path, atom_names)
-        elif format.lower() == "lmp":
+        elif format.lower() == "lammps/lmp":
             self.image_data = LMP(data_path)
         else:
             assert train_ratio is not None, "train_ratio must be set when format is not config or poscar (inference)"
@@ -43,19 +40,19 @@ class Save_Data(object):
             if len(glob.glob(os.path.join(self.labels_path, train_data_path, "*.npy"))) > 0:
                 print("Data %s has been processed!" % self.data_name)
                 return
-            if format.lower() == "movement":
+            if format.lower() == "pwmat/movement":
                 self.image_data = MOVEMENT(data_path)
-            elif format.lower() == "outcar":
+            elif format.lower() == "vasp/outcar":
                 self.image_data = OUTCAR(data_path)
-            elif format.lower() == "xyz":
+            elif format.lower() == "extxyz":
                 pass
-            elif format.lower() == "xml":
+            elif format.lower() == "vasp/xml":
                 pass
             elif format.lower() == 'cp2k/md':
                 self.image_data = CP2KMD(data_path)
             elif format.lower() == 'cp2k/scf':
                 self.image_data = CP2KSCF(data_path)
-        self.lattice, self.position, self.energies, self.ei, self.forces, self.virials, self.atom_type, self.atom_types_image, self.image_nums = get_all(self.image_data.get())
+        self.lattice, self.position, self.energies, self.ei, self.forces, self.virials, self.atom_type, self.atom_types_image, self.image_nums = get_pw(self.image_data.get())
 
         if train_ratio is not None:  # inference 时不存数据
             self.train_ratio = train_ratio        
@@ -92,8 +89,8 @@ class Save_Data(object):
             if not os.path.exists(labels_path):
                 os.makedirs(labels_path)
             if retain_raw:
-                self.save_to_raw(train_data, train_path)
-            self.save_to_npy(train_data, labels_path)
+                save_to_raw(train_data, train_path)
+            save_to_npy(train_data, labels_path)
         else:
             train_path = os.path.join(labels_path, train_path) 
             val_path = os.path.join(labels_path, val_path)
@@ -102,29 +99,15 @@ class Save_Data(object):
             if not os.path.exists(val_path):
                 os.makedirs(val_path)
             if retain_raw:
-                self.save_to_raw(train_data, train_path)
-                self.save_to_raw(val_data, val_path)
-            self.save_to_npy(train_data, train_path)
-            self.save_to_npy(val_data, val_path)
+                save_to_raw(train_data, train_path)
+                save_to_raw(val_data, val_path)
+            save_to_npy(train_data, train_path)
+            save_to_npy(val_data, val_path)
                 
-    def save_to_raw(self, data, directory):
-        filenames = ["lattice.dat", "position.dat", "energies.dat", "forces.dat", "image_type.dat", "atom_type.dat", "ei.dat", "virials.dat"]
-        formats = ["%.8f", "%.16f", "%.8f", "%.16f", "%d", "%d", "%.8f", "%.8f"]
-        # for i in tqdm(range(len(data)), desc="Saving to raw files"):
-        for i in range(len(data)):
-            if i != 7 or (i == 7 and len(data[7]) != 0):
-                np.savetxt(os.path.join(directory, filenames[i]), data[i], fmt=formats[i])
-
-    def save_to_npy(self, data, directory):
-        filenames = ["lattice.npy", "position.npy", "energies.npy", "forces.npy", "image_type.npy", "atom_type.npy", "ei.npy", "virials.npy"]
-        # for i in tqdm(range(len(data)), desc="Saving to npy files"):
-        for i in range(len(data)):
-            if i != 7 or (i == 7 and len(data[7]) != 0):
-                np.save(os.path.join(directory, filenames[i]), data[i])
                 
 class Configs(object):
     @staticmethod
-    def read(format: str, data_path: str, pbc = None, atom_names = None, index = -1, **kwargs):
+    def read(format: str, data_path: str, pbc = None, atom_names = None, index = ':', **kwargs):
         """ Read the data from the input file. 
             index: int, slice or str
             The last configuration will be returned by default.  Examples:
@@ -150,290 +133,80 @@ class Configs(object):
             except ValueError:
                 pass
 
-        if format.lower() == "config" or format.lower() == 'pwmat':
+        if format.lower() == "pwmat/config":
             image = CONFIG(data_path, pbc).image_list[0]
-        elif format.lower() == "poscar" or format.lower() == 'vasp':
+        elif format.lower() == "vasp/poscar":
             image = POSCAR(data_path, pbc).image_list[0]
-        elif format.lower() == "dump":
+        elif format.lower() == "lammps/dump":
             assert atom_names is not None, "atom_names must be set when format is dump"
             image = DUMP(data_path, atom_names).image_list[index]
-        elif format.lower() == "lmp":
+        elif format.lower() == "lammps/lmp":
             image = LMP(data_path, atom_names, **kwargs).image_list[0]
-        elif format.lower() == "movement":
-            image = MOVEMENT(data_path).image_list
-        elif format.lower() == "outcar":
-            image = OUTCAR(data_path).image_list
-        elif format.lower() == "xyz":
+        elif format.lower() == "pwmat/movement":
+            image = MOVEMENT(data_path).image_list[index]
+        elif format.lower() == "vasp/outcar":
+            image = OUTCAR(data_path).image_list[index]
+        elif format.lower() == "extxyz":
             image = None
-        elif format.lower() == "xml":
+        elif format.lower() == "vasp/xml":
             image = None
         elif format.lower() == 'cp2k/md':
-            image = CP2KMD(data_path).image_list
+            image = CP2KMD(data_path).image_list[index]
         elif format.lower() == 'cp2k/scf':
             image = CP2KSCF(data_path).image_list[0]
         else:
             raise Exception("Error! The format of the input file is not supported!")
         return image
-
+    
     @staticmethod
-    def get(image_data: list[Image]):
-        """ Get and process the data from the input file. """
-        lattice, position, energies, ei, forces, virials, atom_type, atom_types_image, image_nums = get_all(image_data)
-        return {"lattice": lattice, "position": position, "energies": energies, "ei": ei, "forces": forces, "virials": virials, "atom_type": atom_type, "atom_types_image": atom_types_image, "image_nums": image_nums}
+    def to(image, output_path, save_format = None, **kwargs):
+        """
+        Write atoms object to a new file.
 
-    @staticmethod
-    def save(image_data_dict: dict, datasets_path = "./PWdata", train_data_path = "train", valid_data_path = "valid",
-           train_ratio = None, random = True, seed = 2024, retain_raw = False, data_name = None):
-        
-        lattice = image_data_dict["lattice"]
-        position = image_data_dict["position"]
-        energies = image_data_dict["energies"]
-        ei = image_data_dict["ei"]
-        forces = image_data_dict["forces"]
-        virials = image_data_dict["virials"]
-        atom_type = image_data_dict["atom_type"]
-        atom_types_image = image_data_dict["atom_types_image"]
-        image_nums = image_data_dict["image_nums"]
+        Note: Set sort to False for CP2K, because data from CP2K is already sorted!!!. It will result in a wrong order if sort again.
 
-        if data_name is None:
-            sc = Counter(atom_types_image)  # a list sc of (symbol, count) pairs
-            temp_data_name = ''.join([elements[key] + str(count) for key, count in sc.items()])
-            data_name = temp_data_name
-            suffix = 0
-            while os.path.exists(os.path.join(datasets_path, data_name)):
-                suffix += 1
-                data_name = temp_data_name + "_" + str(suffix)
+        Args:
+        output_path (str): Required. The path to save the file.
+        save_format (str): Required. The format of the file. Default is None.
+
+        Kwargs:
+
+        Additional keyword arguments for image or multi_image format. (e.g. 'pwmat/config', 'vasp/poscar', 'lammps/lmp', 'pwmat/movement', 'extxyz')
+
+            * data_name (str): Save name of the configuration file.
+            * sort (bool): Whether to sort the atoms by atomic number. Default is False.
+            * wrap (bool): hether to wrap the atoms into the simulation box (for pbc). Default is False.
+            * direct (bool): The coordinates of the atoms are in fractional coordinates or cartesian coordinates. (0 0 0) -> (1 1 1)
+
+
+        Additional keyword arguments for 'pwmlff/npy' format.
+
+            * data_name (str): Save name of the dataset folder.
+            * train_ratio (float): Required. The ratio of the training dataset. Default is None. 
+            * train_data_path (str): Save path of the training dataset. Default is "train". ("./output_path/train")
+            * valid_data_path (str): Save path of the validation dataset. Default is "valid". ("./output_path/valid")
+            * random (bool): Whether to shuffle the raw data and then split the data into the training and validation datasets. Default is True.
+            * seed (int): Random seed. Default is 2024.
+            * retain_raw (bool): Whether to retain the raw data. Default is False.
+
+        """
+        assert save_format is not None, "output file format is not specified"
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        if save_format.lower() == 'pwmat/config':
+            write_config(image, output_path, **kwargs)
+        elif save_format.lower() == 'vasp/poscar':
+            write_vasp(image, output_path, **kwargs)
+        elif save_format.lower() == "lammps/lmp":
+            write_lammps(image, output_path, **kwargs)
+        elif save_format.lower() == "pwmat/movement":
+            save_to_movement(image, output_path, **kwargs)
+        elif save_format.lower() == "extxyz":
+            save_to_extxyz(image, output_path, **kwargs)
+        elif save_format.lower() == "pwmlff/npy":
+            save_to_dataset(image, datasets_path=output_path, **kwargs)
         else:
-            pass
-            
-        labels_path = os.path.join(datasets_path, data_name)
-        if not os.path.exists(datasets_path):
-            os.makedirs(datasets_path, exist_ok=True)
-        if not os.path.exists(labels_path):
-            os.makedirs(labels_path, exist_ok=True)
-        
-        if seed:
-            np.random.seed(seed)
-        indices = np.arange(image_nums)    # 0, 1, 2, ..., image_nums-1
-        if random:
-            np.random.shuffle(indices)              # shuffle the indices
-        assert train_ratio is not None, "train_ratio must be set"
-        train_size = ceil(image_nums * train_ratio)
-        train_indices = indices[:train_size]
-        val_indices = indices[train_size:]
-        # image_nums = [image_nums]
-        atom_types_image = atom_types_image.reshape(1, -1)
-
-        train_data = [lattice[train_indices], position[train_indices], energies[train_indices],
-                        forces[train_indices], atom_types_image, atom_type,
-                        ei[train_indices]]
-        val_data = [lattice[val_indices], position[val_indices], energies[val_indices],
-                        forces[val_indices], atom_types_image, atom_type,
-                        ei[val_indices]]
-        
-        if len(virials) != 0:
-            train_data.append(virials[train_indices])
-            val_data.append(virials[val_indices])
-        else:
-            train_data.append([])
-            val_data.append([])
-
-        if train_ratio == 1.0 or len(val_indices) == 0:
-            labels_path = os.path.join(labels_path, train_data_path)
-            if not os.path.exists(labels_path):
-                os.makedirs(labels_path)
-            if retain_raw:
-                Configs.save_to_raw(train_data, train_data_path)
-            Configs.save_to_npy(train_data, labels_path)
-        else:
-            train_path = os.path.join(labels_path, train_data_path) 
-            val_path = os.path.join(labels_path, valid_data_path)
-            if not os.path.exists(train_path):
-                os.makedirs(train_path)
-            if not os.path.exists(val_path):
-                os.makedirs(val_path)
-            if retain_raw:
-                Configs.save_to_raw(train_data, train_path)
-                Configs.save_to_raw(val_data, val_path)
-            Configs.save_to_npy(train_data, train_path)
-            Configs.save_to_npy(val_data, val_path)
-
-    @staticmethod   
-    def save_to_raw(data, directory):
-        filenames = ["lattice.dat", "position.dat", "energies.dat", "forces.dat", "image_type.dat", "atom_type.dat", "ei.dat", "virials.dat"]
-        formats = ["%.8f", "%.16f", "%.8f", "%.16f", "%d", "%d", "%.8f", "%.8f"]
-        # for i in tqdm(range(len(data)), desc="Saving to raw files"):
-        for i in range(len(data)):
-            if i != 7 or (i == 7 and len(data[7]) != 0):
-                np.savetxt(os.path.join(directory, filenames[i]), data[i], fmt=formats[i])
-    @staticmethod
-    def save_to_npy(data, directory):
-        filenames = ["lattice.npy", "position.npy", "energies.npy", "forces.npy", "image_type.npy", "atom_type.npy", "ei.npy", "virials.npy"]
-        # for i in tqdm(range(len(data)), desc="Saving to npy files"):
-        for i in range(len(data)):
-            if i != 7 or (i == 7 and len(data[7]) != 0):
-                np.save(os.path.join(directory, filenames[i]), data[i])
-
-class OUTCAR2MOVEMENT(object):
-    def __init__(self, outcar_file, output_path, output_file) -> None:
-        """
-        Convert OUTCAR file to MOVEMENT file.
-
-        Args:
-            outcar_file (str): Path to the OUTCAR file.
-            output_path (str): Path to the output directory.
-            output_file (str): Name of the output file.
-
-        Returns:
-            None
-        """
-        self.image_data = OUTCAR(outcar_file)
-        self.output_path = os.path.abspath(output_path)
-        self.output_file = output_file
-        self.is_cartesian = True    # data from cartesian coordinates
-        save_to_movement(self.image_data.get(), self.output_path, self.output_file, self.is_cartesian)
-
-class MOVEMENT2XYZ(object):
-    def __init__(self, movement_file, output_path, output_file) -> None:
-        """
-        Convert MOVEMENT file to XYZ file.
-
-        Args:
-            movement_file (str): Path to the MOVEMENT file.
-            output_path (str): Path to the output directory.
-            output_file (str): Name of the output file.
-
-        Returns:
-            None
-        """
-        self.image_data = MOVEMENT(movement_file)
-        self.output_path = os.path.abspath(output_path)
-        self.output_file = output_file
-        save_to_extxyz(self.image_data.get(), self.output_path, self.output_file)
-
-class SUPERCELL(object):
-    def __init__(self, config: Image, output_path = "./", output_file = "supercell", 
-                 supercell_matrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1]], 
-                 direct = True, sort = True, pbc = None, save_format: str = None) -> None:
-        """
-        Args:
-            config (Image): Image object.
-            output_path (str): Path to the output directory.
-            output_file (str): Name of the output file.
-            supercell_matrix (list): supercell matrix (3x3)
-            direct (bool): Whether to write the positions in direct coordinates.
-            sort (bool): Whether to sort the atoms by atomic number.
-            pbc (list): three bool, Periodic boundary conditions flags.  Examples: [True, True, False] or [1, 1, 0]. True (1) means periodic, False (0) means non-periodic.
-            save_format (str): Format of the output file.
-        """
-
-        self.output_path = os.path.abspath(output_path)
-        self.output_file = output_file
-        self.supercell_matrix = supercell_matrix   
-        # Make a supercell     
-        supercell = make_supercell(config, self.supercell_matrix, pbc)
-        # Write out the structure
-        supercell.to(file_path = self.output_path,
-                     file_name = self.output_file,
-                     file_format = save_format,
-                     direct = direct,
-                     sort = sort)
-        # from build.write_struc import write_config, write_vasp
-        # if format.lower() == "config":
-        #     write_config(self.output_path, self.output_file, supercell, direct=direct, sort=sort)
-        # elif format.lower() == "poscar":
-        #     write_vasp(self.output_path, self.output_file, supercell, direct=direct, sort=sort)
-
-class PerturbStructure(object):
-    def __init__(self, perturbed_file: Image, pert_num = 50, cell_pert_fraction = 0.03, atom_pert_distance = 0.01,
-                 output_path = "./", direct = True, sort = None, pbc = None, save_format: str = None) -> None:
-        """
-        Perturb the structure.
-
-        Args:
-            perturbed_file (Image): Image object.
-            pert_num (int): Number of perturbed structures.
-            cell_pert_fraction (float): Fraction of the cell perturbation.
-            atom_pert_distance (float): Distance of the atom perturbation.
-            output_path (str): Path to the output directory.
-            direct (bool): Whether to write the positions in direct coordinates.
-            sort (bool): Whether to sort the atoms by atomic number.
-            pbc (list): three bool, Periodic boundary conditions flags.  Examples: [True, True, False] or [1, 1, 0]. True (1) means periodic, False (0) means non-periodic.
-            save_format (str): Format of the output file.
-
-        Returns:
-            None
-        """
-
-        self.pert_num = pert_num
-        self.cell_pert_fraction = cell_pert_fraction
-        self.atom_pert_distance = atom_pert_distance
-        self.output_path = os.path.abspath(output_path)
-        self.perturbed_structs = BatchPerturbStructure.batch_perturb(perturbed_file, self.pert_num, self.cell_pert_fraction, self.atom_pert_distance)
-        for tmp_perturbed_idx, tmp_pertubed_struct in enumerate(self.perturbed_structs):
-            tmp_pertubed_struct.to(file_path = self.output_path,
-                                   file_name = "{0}_pertubed.{1}".format(tmp_perturbed_idx, save_format.lower()),
-                                   file_format = save_format,
-                                   direct = direct,
-                                   sort = sort) 
-        
-class ScaleCell(object):
-    def __init__(self, scaled_file: Image, scale_factor = 1.0, output_path = "./", direct = True, sort = None, pbc = None, save_format: str = None) -> None:
-        """
-        Scale the lattice.
-
-        Args:
-            scaled_file (Image): Image object.
-            scale_factor (float): Scale factor.
-            output_path (str): Path to the output directory.
-            direct (bool): Whether to write the positions in direct coordinates.
-            sort (bool): Whether to sort the atoms by atomic number.
-            pbc (list): three bool, Periodic boundary conditions flags.  Examples: [True, True, False] or [1, 1, 0]. True (1) means periodic, False (0) means non-periodic.
-            save_format (str): Format of the output file.
-
-        Returns:
-            None
-        """
-        
-        self.scale_factor = scale_factor
-        self.output_path = os.path.abspath(output_path)
-        self.scaled_struct = BatchScaleCell.batch_scale(scaled_file, self.scale_factor)
-        self.scaled_struct.to(file_path = self.output_path,
-                              file_name = "scaled.{0}".format(save_format.lower()),
-                              file_format = save_format,
-                              direct = direct,
-                              sort = sort)
-
-def get_all(image_data):
-    # Initialize variables to store data
-    all_lattices = []
-    all_postions = []
-    all_energies = []
-    all_ei = []
-    all_forces = []
-    all_virials = []
-    for image in image_data:
-        if image.cartesian:
-            image.position = image.get_scaled_positions(wrap=False)     # get the positions in direct coordinates, because the positions in direct coordinates are used in the MLFF model (find_neighbore)
-            image.cartesian = False
-        all_lattices.append(image.lattice)
-        all_postions.append(image.position)
-        all_energies.append(image.Ep)
-        all_forces.append(image.force)
-        all_ei.append(image.atomic_energy)
-        if len(image.stress) != 0:
-            all_virials.append(image.stress)  
-    image_nums = len(image_data)
-    atom_type = np.array(image.atom_type).reshape(1, -1)
-    atom_types_image = np.array(image.atom_types_image)
-    all_lattices = np.array(all_lattices).reshape(image_nums, 9)
-    all_postions = np.array(all_postions).reshape(image_nums, -1)
-    all_energies = np.array(all_energies).reshape(image_nums, 1)
-    all_forces = np.array(all_forces).reshape(image_nums, -1)
-    all_ei = np.array(all_ei).reshape(image_nums, -1)
-    if len(all_virials) != 0:
-        all_virials = np.array(all_virials).reshape(image_nums, -1)
-    return all_lattices, all_postions, all_energies, all_ei, all_forces, all_virials, atom_type, atom_types_image, image_nums
+            raise RuntimeError('Unknown file format')
 
 def string2index(string: str) -> Union[int, slice, str]:
     """Convert index string to either int or slice"""
@@ -465,17 +238,12 @@ if __name__ == "__main__":
     pbc = [1, 1, 1]
     # config = Configs.read(format, data_file, atom_names=["Si"], index=-1)   # read dump
     config = Configs.read(format, data_file)   
-    # SUPERCELL(config, output_path, output_file, SUPERCELL_MATRIX, pbc=pbc, save_format=format)
-    PerturbStructure(config, output_path = "/data/home/hfhuang/Si64", save_format=format)
-    # ScaleCell(config, scale_factor = 1.1, output_path = "/data/home/hfhuang/Si64", save_format=format)
-    config.to(file_path = output_path,
+    Configs.to(file_path = output_path,
                      file_name = output_file,
                      file_format = 'config',
                      direct = True,
                      sort = False)
-    # OUTCAR2MOVEMENT(data_path, output_path, output_file)
     parser = argparse.ArgumentParser(description='Convert and build structures.')
-    parser.add_argument('--convert', type=int, required=False, help='Convert OUTCAR to MOVEMENT (1) or MOVEMENT to XYZ (2)')
     parser.add_argument('--format', type=str, required=False, help='Format of the input file', default="outcar")
     parser.add_argument('--save_format', type=str, required=False, help='Format of the output file', default="config")
     parser.add_argument('--outcar_file', type=str, required=False, help='Path to the OUTCAR file')
@@ -497,11 +265,6 @@ if __name__ == "__main__":
     parser.add_argument('--index', type=Union[int, slice, str], required=False, help='Index of the configuration', default=-1)
     parser.add_argument('--atom_names', type=list, required=False, help='Names of the atoms', default=["H"])
     parser.add_argument('--style', type=str, required=False, help='Style of the lammps input file', default="atomic")
-
     
     args = parser.parse_args()
     
-    if args.convert == 1:
-        OUTCAR2MOVEMENT(args.outcar_file, args.output_path, args.output_file)
-    elif args.convert == 2:
-        MOVEMENT2XYZ(args.movement_file, args.output_path, args.output_file)

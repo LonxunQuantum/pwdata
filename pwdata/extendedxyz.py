@@ -1,12 +1,12 @@
 import os
-from pwdata.image import frac2cart
 from pwdata.calculators.const import elements
 
 def save_to_extxyz(image_data_all: list, output_path: str, output_file: str, write_patthen='w'):
     output_file = open(os.path.join(output_path, output_file), write_patthen)
     for i in range(len(image_data_all)):
         image_data = image_data_all[i]
-        image_data.position = frac2cart(image_data.position, image_data.lattice)
+        if not image_data.cartesian:
+            image_data._set_cartesian()
         output_file.write("%d\n" % image_data.atom_nums)
         # output_file.write("Iteration: %s\n" % image_data.iteration)
         output_head = 'Lattice="%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f" Properties=species:S:1:pos:R:3:force:R:3:local_energy:R:1 pbc="T T T" energy={}\n'.format(image_data.Ep)

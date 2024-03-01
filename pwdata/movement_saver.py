@@ -2,15 +2,15 @@ import os
 import numpy as np
 import numpy.linalg as LA
 
-def save_to_movement(image_data_all: list, output_path: str, output_file: str, is_cartesian: bool = True):
+def save_to_movement(image_data_all: list, output_path: str, output_file: str):
     output_file = open(os.path.join(output_path, output_file), 'w')
     for i in range(len(image_data_all)):
         image_data = image_data_all[i]
-        if is_cartesian:
-            image_data.position = np.dot(image_data.position, LA.inv(image_data.lattice))       # cartesian position to fractional position
+        if image_data.cartesian:
+            image_data._set_fractional()
         # with open(os.path.join(output_path, output_file), 'a') as wf:
         output_file.write(" %d atoms,Iteration (fs) = %16.10E, Etot,Ep,Ek (eV) = %16.10E  %16.10E   %16.10E, SCF = %d\n"\
-                            % (image_data.atom_nums, 0.0, image_data.Etot, image_data.Etot, 0.0, image_data.scf))
+                            % (image_data.atom_nums, 0.0, image_data.Ep, image_data.Ep, 0.0, image_data.scf))
         output_file.write(" MD_INFO: METHOD(1-VV,2-NH,3-LV,4-LVPR,5-NHRP) TIME(fs) TEMP(K) DESIRED_TEMP(K) AVE_TEMP(K) TIME_INTERVAL(fs) TOT_TEMP(K) \n")
         output_file.write("          *    ************   ********   ********   ********    ********    ********\n")
         output_file.write("     TOTAL MOMENTUM\n")

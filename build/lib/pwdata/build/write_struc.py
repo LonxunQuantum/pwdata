@@ -1,14 +1,15 @@
 import numpy as np
 import os
 from collections import Counter
-from build.cell import cell_to_cellpar
-from lmps import Box2l
-from calculators.const import elements, ELEMENTMASSTABLE
+from pwdata.build.cell import cell_to_cellpar
+from pwdata.lmps import Box2l
+from pwdata.calculators.const import elements, ELEMENTMASSTABLE
 
 
-def write_config(filepath,
-                 filename,
-                 atoms,
+def write_config(atoms,
+                 filepath,
+                 data_name="tmp.pwdada",
+                 direct=True,
                  sort=None,
                  symbol_count=None,
                  long_format=True,
@@ -20,6 +21,7 @@ def write_config(filepath,
     positions scaled coordinates (Direct), and constraints
     to file. fractional coordinates is default.
     """
+    assert direct==True, "PWmat only support direct coordinates"
     atom_nums = len(atoms) if atoms.atom_nums is None else atoms.atom_nums
     if isinstance(atoms, (list, tuple)):
         if atom_nums > 1:
@@ -105,7 +107,7 @@ def write_config(filepath,
         atom_type_num = atoms.atom_type_num
 
     # Write to file
-    output_file = open(os.path.join(filepath, filename), 'w')
+    output_file = open(os.path.join(filepath, data_name), 'w')
     output_file.write('%d\n' % atom_nums)
     output_file.write('Lattice vector\n')
     for i in range(3):
@@ -117,9 +119,9 @@ def write_config(filepath,
                            1, 1, 1))
     output_file.close()
     
-def write_vasp(filepath,
-               filename,
-               atoms,
+def write_vasp(atoms,
+               filepath,
+               data_name="tmp.pwdada",
                direct=False,
                sort=None,
                symbol_count=None,
@@ -222,8 +224,8 @@ def write_vasp(filepath,
     
     atom_type = [elements[_] for _ in atom_type]
     # Write to file
-    output_file = open(os.path.join(filepath, filename), 'w')
-    output_file.write('Created from %s\n' % filename)
+    output_file = open(os.path.join(filepath, data_name), 'w')
+    output_file.write('Created from %s\n' % data_name)
     output_file.write('1.0\n')
     for i in range(3):
         output_file.write('%19.16f %19.16f %19.16f\n' % tuple(atoms.lattice[i]))
@@ -245,9 +247,9 @@ def write_vasp(filepath,
         output_file.write('\n')
     output_file.close()
 
-def write_lammps(filepath,
-                 filename,
-                 atoms,
+def write_lammps(atoms,
+                 filepath,
+                 data_name="tmp.pwdada",
                  direct=False,
                  sort=None,
                  symbol_count=None,
@@ -380,8 +382,8 @@ def write_lammps(filepath,
                 LX[i,2] = x[i,2]
 
         # Write to file
-        output_file = open(os.path.join(filepath, filename), 'w')
-        output_file.write('Created from %s\n' % filename)
+        output_file = open(os.path.join(filepath, data_name), 'w')
+        output_file.write('Created from %s\n' % data_name)
         output_file.write("%-12d atoms\n" % (atom_nums))
         output_file.write("%-12d atom types\n" % (len(atom_type)))
         output_file.write("%16.12f %16.12f xlo xhi\n" % (xlo, xhi))
