@@ -2,6 +2,32 @@ import numpy as np
 from typing import List
 from pwdata.image import Image
 
+def scale_cell(
+    image_data:Image,
+    scale_factor:float):
+    """
+    Scale the cell of the system.
+
+    Parameters
+    ----------
+    image_data : Image Object
+        The system to be scaled.
+    scale_factor : float
+        The scale factor of the cell.
+
+    Returns
+    -------
+    tmp_system : a new Image object
+        The scaled system.
+    """
+    tmp_system = image_data.copy()
+    if tmp_system.cartesian:
+        tmp_system.position = tmp_system.get_scaled_positions(wrap=False)   # for cartesian coordinates, we need to convert it to fractional coordinates
+        tmp_system.cartesian = False                                        # set cartesian to False, this is important, otherwise, the scaled cell will be scaled again while saving (also in the write_struc.py)
+    tmp_system.lattice = np.dot(tmp_system.lattice, scale_factor)
+    tmp_system.atom_types_image = tmp_system.arrays['atom_types_image']
+    return tmp_system
+
 class ScaleCell(object):
     def __init__(self, atoms:List[Image]):
         self.atoms = atoms

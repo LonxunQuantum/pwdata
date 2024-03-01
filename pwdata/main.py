@@ -121,7 +121,6 @@ class Configs(object):
 
             kwargs: dict
             Additional keyword arguments for reading the input file.
-            retain_raw: bool, optional. Whether to retain raw data. Default is False.
             unit: str, optional. for lammps, the unit of the input file. Default is 'metal'.
             style: str, optional. for lammps, the style of the input file. Default is 'atomic'.
             sort_by_id: bool, optional. for lammps, whether to sort the atoms by id. Default is True.
@@ -161,7 +160,7 @@ class Configs(object):
     @staticmethod
     def to(image, output_path, save_format = None, **kwargs):
         """
-        Write atoms object to a new file.
+        Write all images (>= 1) object to a new file.
 
         Note: Set sort to False for CP2K, because data from CP2K is already sorted!!!. It will result in a wrong order if sort again.
 
