@@ -6,6 +6,7 @@ from typing import (List, Union, Optional)
 # import time
 # os.chdir(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from pwdata.image import Image
 from pwdata.movement import MOVEMENT
 from pwdata.outcar import OUTCAR
 from pwdata.poscar import POSCAR
@@ -105,7 +106,24 @@ class Save_Data(object):
             save_to_npy(val_data, val_path)
                 
                 
-class Configs(object):
+class Config(object):
+    def __init__(self, format: str, data_path: str, pbc = None, atom_names = None, index = ':', **kwargs):
+        self.format = format
+        self.data_path = data_path
+        self.pbc = pbc
+        self.atom_names = atom_names
+        self.index = index
+        self.kwargs = kwargs
+        self.images = self._read()
+
+    def _read(self):
+        return Config.read(self.format, self.data_path, self.pbc, self.atom_names, self.index, **self.kwargs)
+    
+    def append(self, images_obj):
+        if not hasattr(self, 'images'):
+            self.images = []
+        self.images += images_obj.images
+        
     @staticmethod
     def read(format: str, data_path: str, pbc = None, atom_names = None, index = ':', **kwargs):
         """ Read the data from the input file. 
@@ -157,8 +175,7 @@ class Configs(object):
             raise Exception("Error! The format of the input file is not supported!")
         return image
     
-    @staticmethod
-    def to(image, output_path, save_format = None, **kwargs):
+    def to(self, output_path, save_format = None, **kwargs):
         """
         Write all images (>= 1) object to a new file.
 
@@ -174,7 +191,7 @@ class Configs(object):
 
             * data_name (str): Save name of the configuration file.
             * sort (bool): Whether to sort the atoms by atomic number. Default is False.
-            * wrap (bool): hether to wrap the atoms into the simulation box (for pbc). Default is False.
+            * wrap (bool): Whether to wrap the atoms into the simulation box (for pbc). Default is False.
             * direct (bool): The coordinates of the atoms are in fractional coordinates or cartesian coordinates. (0 0 0) -> (1 1 1)
 
 
@@ -192,6 +209,27 @@ class Configs(object):
         assert save_format is not None, "output file format is not specified"
         if not os.path.exists(output_path):
             os.makedirs(output_path)
+
+        images = self if isinstance(self, Image) else self.images
+            
+        if isinstance(images, list):
+            self.multi_to(images, output_path, save_format, **kwargs)
+        else:
+            self.write_image(images, output_path, save_format, **kwargs)
+        
+    def multi_to(self, images, output_path, save_format, **kwargs):
+        """
+        Write multiple images to new files.
+        """
+        if save_format.lower() in ['pwmat/config', 'vasp/poscar', 'lammps/lmp']:
+            data_name = kwargs['data_name']
+            for i, image in enumerate(images):
+                kwargs['data_name'] = data_name + "_{0}".format(i)
+                self.write_image(image, output_path, save_format, **kwargs)
+        else:
+            self.write_image(images, output_path, save_format, **kwargs)
+
+    def write_image(self, image, output_path, save_format, **kwargs):
         if save_format.lower() == 'pwmat/config':
             write_config(image, output_path, **kwargs)
         elif save_format.lower() == 'vasp/poscar':
@@ -235,9 +273,9 @@ if __name__ == "__main__":
     output_file = "supercell.config"
     format = "config"
     pbc = [1, 1, 1]
-    # config = Configs.read(format, data_file, atom_names=["Si"], index=-1)   # read dump
-    config = Configs.read(format, data_file)   
-    Configs.to(file_path = output_path,
+    # config = Config.read(format, data_file, atom_names=["Si"], index=-1)   # read dump
+    config = Config.read(format, data_file)   
+    Config.to(file_path = output_path,
                      file_name = output_file,
                      file_format = 'config',
                      direct = True,

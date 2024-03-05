@@ -2,8 +2,25 @@ import numpy as np
 from typing import List
 from pwdata.image import Image
 
+class PerturbedStructures:
+    def __init__(self):
+        self.structures = []
+
+    def append(self, structure):
+        self.structures.append(structure)
+
+    def __getitem__(self, index):
+        return self.structures[index]
+
+    def __len__(self):
+        return len(self.structures)
+    
+    def to(self, output_path, data_name = None, save_format = None, direct = True, sort = False, wrap = False):
+        for i, structure in enumerate(self.structures):
+            structure.to(output_path, data_name=data_name+"_{0}".format(i), save_format=save_format, direct=direct, sort=sort, wrap=wrap)
+
 def perturb_structure(
-    image_data:Image,
+    image_data,
     pert_num:int,
     cell_pert_fraction:float,
     atom_pert_distance:float):
@@ -13,7 +30,7 @@ def perturb_structure(
 
     Parameters
     ----------
-    image_data : Image object, The system to be perturbed.
+    image_data : Include Image object, The system to be perturbed.
     pert_num : int Each frame in the system will make `pert_num` copies,
         and all the copies will be perturbed.
         That means the system to be returned will contain `pert_num` * frame_num of the input system.
@@ -32,7 +49,9 @@ def perturb_structure(
     perturbed_system : A list of new Image objects. Each Image object contains the information of a perturbed configuration.
         The perturbed structs. It contains `pert_num` * frame_num of the input system frames.
     """
-    perturbed_structs = []
+    image_data = image_data if isinstance(image_data, Image) else image_data.images
+    # perturbed_structs = []
+    perturbed_structs = PerturbedStructures()
     for _ in range(pert_num):
         tmp_system = image_data.copy()
         cell_perturb_matrix = get_cell_perturb_matrix(cell_pert_fraction)

@@ -5,7 +5,7 @@ from pwdata.image import Image
 class SupercellError(Exception):
     """Use if construction of supercell fails"""
 
-def make_supercell(image_data: Image, supercell_matrix: list, pbc: list = None, wrap=True, tol=1e-5):
+def make_supercell(image_data, supercell_matrix: list, pbc: list = None, wrap=True, tol=1e-5):
     """Construct supercell from image_data and supercell_matrix
 
     Args:
@@ -13,6 +13,7 @@ def make_supercell(image_data: Image, supercell_matrix: list, pbc: list = None, 
         supercell_matrix (list): supercell matrix (3x3)
         pbc (list): Periodic boundary conditions flags.
     """
+    image_data = image_data if isinstance(image_data, Image) else image_data.images
     prim = image_data
     supercell_matrix = np.array(supercell_matrix)
     supercell = clean_matrix(supercell_matrix @ prim.lattice)

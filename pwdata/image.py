@@ -68,9 +68,7 @@ class Image(object):
             atoms.arrays[name] = a.copy()
         return atoms
     
-    '''
-    No use, Replace by the `Configs.to()` function
-    def to(self, output_path, file_name = None, file_format = None, direct = True, sort = False, wrap = False):
+    def to(self, output_path, data_name = None, save_format = None, direct = True, sort = False, wrap = False):
         """
         Write atoms object to a new file.
 
@@ -78,24 +76,25 @@ class Image(object):
 
         Args:
         output_path (str): The path to save the file.
-        file_name (str): Save name of the configuration file.
-        file_format (str): The format of the file. Default is None.
+        data_name (str): Save name of the configuration file.
+        save_format (str): The format of the file. Default is None.
         direct (bool): The coordinates of the atoms are in fractional coordinates or cartesian coordinates. (0 0 0) -> (1 1 1)
         sort (bool): Whether to sort the atoms by atomic number. Default is False.
         wrap (bool): hether to wrap the atoms into the simulation box (for pbc). Default is False.
         """
-        assert file_format is not None, "output file format is not specified"
+        assert save_format is not None, "output file format is not specified"
         if not os.path.exists(output_path):
             os.makedirs(output_path)
-        if file_format.lower() == 'pwmat/config':
-            write_config(output_path, file_name, self, sort=sort, wrap=wrap)
-        elif file_format.lower() == 'vasp/poscar':
-            write_vasp(output_path, file_name, self, direct=direct, sort=sort, wrap=wrap)
-        elif file_format.lower() == "lammps/lmp":
-            write_lammps(output_path, file_name, self, sort=sort, wrap=wrap)
+        if save_format.lower() == 'pwmat/config':
+            write_config(self, output_path, data_name, sort=sort, wrap=wrap)
+        elif save_format.lower() == 'vasp/poscar':
+            write_vasp(self, output_path, data_name, direct=direct, sort=sort, wrap=wrap)
+        elif save_format.lower() == "lammps/lmp":
+            write_lammps(self, output_path, data_name, sort=sort, wrap=wrap)
+        elif save_format.lower() == "extxyz":
+            raise Exception()
         else:
             raise RuntimeError('Unknown file format')
-    '''
     
     def prim_dict(self):
         """Return a dictionary of the primitive image data."""

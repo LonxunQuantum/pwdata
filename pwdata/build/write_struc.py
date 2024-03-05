@@ -118,6 +118,7 @@ def write_config(atoms,
                           (symbols[i], coord[i][0], coord[i][1], coord[i][2],
                            1, 1, 1))
     output_file.close()
+    print("Convert to %s successfully!" % data_name)
     
 def write_vasp(atoms,
                filepath,
@@ -246,6 +247,7 @@ def write_vasp(atoms,
         #     output_file.write(' %s %s %s' % tuple(sflags[i]))
         output_file.write('\n')
     output_file.close()
+    print("Convert to %s successfully!" % data_name)
 
 def write_lammps(atoms,
                  filepath,
@@ -402,4 +404,5 @@ def write_lammps(atoms,
         for i in range(atom_nums):
             output_file.write("%-12d %-12d %16.12f %16.12f %16.12f\n" % (i+1, atype[i], LX[i,0], LX[i,1], LX[i,2]))
         output_file.close()
+        print("Convert to %s successfully!" % data_name)
             

@@ -5,7 +5,7 @@ from pwdata.atomconfig import CONFIG
 from pwdata.build.supercells import make_supercell
 from pwdata.pertub.perturbation import BatchPerturbStructure
 from pwdata.pertub.scale import BatchScaleCell
-from pwdata.main import Configs
+from pwdata import Config
 from pwdata.lammpsdata import LMP
 from pwdata.dump import DUMP
 
@@ -27,9 +27,9 @@ def save_config(config, input_format:str = None, wrap = False, direct = True, so
     if isinstance(config, str):
         config = extract_config(config_path=config, format=input_format, atom_names=atom_names)
         
-    config.to(file_path=save_path, 
-            file_name  =save_name, 
-            file_format=save_format, 
+    config.to(output_path=save_path, 
+            data_name  =save_name, 
+            save_format=save_format, 
             direct     =direct, 
             sort       =sort, 
             wrap       =wrap
@@ -43,9 +43,9 @@ def do_super_cell(config, input_format:str=None, supercell_matrix:list[int]=None
     # Make a supercell     
     supercell = make_supercell(config, supercell_matrix, pbc)
     # Write out the structure
-    supercell.to(file_path = save_path,
-                    file_name = save_name,
-                    file_format = save_format,
+    supercell.to(output_path = save_path,
+                    data_name = save_name,
+                    save_format = save_format,
                     direct = direct,
                     sort = sort)
     return os.path.join(save_path, save_name)
@@ -55,9 +55,9 @@ def do_scale(config, input_format:str=None, scale_factor:float=None,
     if isinstance(config, str):
         config = extract_config(config_path=config, format=input_format)
     scaled_struct = BatchScaleCell.batch_scale(config, scale_factor)
-    scaled_struct.to(file_path = save_path,
-                    file_name = save_name,
-                    file_format = save_format,
+    scaled_struct.to(output_path = save_path,
+                    data_name = save_name,
+                    save_format = save_format,
                     direct = direct,
                     sort = sort)
     return os.path.join(save_path, save_name)
@@ -71,9 +71,9 @@ def do_pertub(config, input_format:str=None, pert_num:int=None, cell_pert_fracti
         os.makedirs(save_path)
     perturbed_structs = BatchPerturbStructure.batch_perturb(config, pert_num, cell_pert_fraction, atom_pert_distance)
     for tmp_perturbed_idx, tmp_pertubed_struct in enumerate(perturbed_structs):
-        tmp_pertubed_struct.to(file_path = save_path,
-                                file_name = "{}_{}".format(tmp_perturbed_idx, save_name),
-                                file_format = save_format,
+        tmp_pertubed_struct.to(output_path = save_path,
+                                data_name = "{}_{}".format(tmp_perturbed_idx, save_name),
+                                save_format = save_format,
                                 direct = direct,
                                 sort = sort) 
         print("pertub {} done!".format(os.path.join(save_path, "{}_{}".format(tmp_perturbed_idx, save_name))))
@@ -103,10 +103,10 @@ def extract_pwdata(data_list:list[str],
             datasets_path = os.path.dirname(datasets_path)
         multi_data = []
         for data_path in data_list:
-            image_data = Configs.read(data_format, data_path)
+            image_data = Config.read(data_format, data_path)
             multi_data += image_data
-        get_all = Configs.get(multi_data)
-        Configs.save(image_data_dict=get_all, 
+        get_all = Config.get(multi_data)
+        Config.save(image_data_dict=get_all, 
                     datasets_path=datasets_path, 
                     train_data_path="train", 
                     valid_data_path="valid", 
@@ -118,9 +118,9 @@ def extract_pwdata(data_list:list[str],
                     )
     else:
         for data_path in data_list:
-            image_data = Configs.read(data_format, data_path)
-            get_all = Configs.get(image_data)
-            Configs.save(image_data_dict=get_all, 
+            image_data = Config.read(data_format, data_path)
+            get_all = Config.get(image_data)
+            Config.save(image_data_dict=get_all, 
                         datasets_path=datasets_path,
                         train_data_path="train", 
                         valid_data_path="valid", 

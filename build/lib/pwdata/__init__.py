@@ -1,9 +1,12 @@
-from .main import Save_Data, Configs, SUPERCELL, PerturbStructure, ScaleCell
+from .main import Save_Data, Config
+from .build.supercells import make_supercell
+from .pertub.perturbation import perturb_structure
+from .pertub.scale import scale_cell
 
 __all__ = [
     "Save_Data", 
-    "Configs",
-    "SUPERCELL",
-    "PerturbStructure",
-    "ScaleCell",
+    "Config",
+    "make_supercell",
+    "perturb_structure",
+    "scale_cell"
     ]
