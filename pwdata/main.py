@@ -122,6 +122,10 @@ class Config(object):
     def append(self, images_obj):
         if not hasattr(self, 'images'):
             self.images = []
+        if not isinstance(self.images, list):
+            self.images = [self.images]
+        if not isinstance(images_obj.images, list):
+            images_obj.images = [images_obj.images]
         self.images += images_obj.images
         
     @staticmethod
