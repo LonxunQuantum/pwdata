@@ -14,6 +14,7 @@ from pwdata.atomconfig import CONFIG
 from pwdata.dump import DUMP
 from pwdata.lammpsdata import LMP
 from pwdata.cp2kdata import CP2KMD, CP2KSCF
+from pwdata.deepmd import DPNPY, DPRAW
 from pwdata.movement_saver import save_to_movement
 from pwdata.extendedxyz import save_to_extxyz
 from pwdata.datasets_saver import save_to_dataset, get_pw, save_to_raw, save_to_npy
@@ -175,6 +176,10 @@ class Config(object):
             image = CP2KMD(data_path).image_list[index]
         elif format.lower() == 'cp2k/scf':
             image = CP2KSCF(data_path).image_list[0]
+        elif format.lower() == 'deepmd/npy':
+            image = DPNPY(data_path).image_list[index]
+        elif format.lower() == 'deepmd/raw':
+            image = DPRAW(data_path).image_list[index]
         else:
             raise Exception("Error! The format of the input file is not supported!")
         return image

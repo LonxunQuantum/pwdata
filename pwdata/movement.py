@@ -60,7 +60,7 @@ class MOVEMENT(object):
         atom_nums = int(numbers[0])
         iteration = format(float(numbers[1]), '.2f')
         Etot, Ep, Ek = float(numbers[2]), float(numbers[3]), float(numbers[4])
-        if len(numbers) >= 5:
+        if len(numbers) >= 6:
             scf = numbers[5]
         else:
             scf = None
