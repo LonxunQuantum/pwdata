@@ -1,6 +1,7 @@
 import numpy as np
 import os, glob
 from tqdm import tqdm
+from collections import Counter
 from pwdata.image import Image
 from pwdata.calculators.const import ELEMENTTABLE
 
@@ -25,13 +26,16 @@ class DPNPY(object):
 
         with open(type_map_raw, 'r') as f:
             type_map = f.read().splitlines()
-        atom_type = [ELEMENTTABLE[atom] for atom in type_map]
+        _atom_type = [ELEMENTTABLE[atom] for atom in type_map]
         
         with open(type_raw, 'r') as f:
             type = f.read().splitlines()
         atom_nums = len(type)
-        atom_types_image = [atom_type[int(atom)] for atom in type]
-        atom_type_num = [atom_types_image.count(atom) for atom in set(atom_types_image)]
+        atom_types_image = [_atom_type[int(atom)] for atom in type]
+        sc = Counter(atom_types_image)
+        atom_type = list(sc.keys())
+        atom_type_num = list(sc.values())
+        # atom_type_num = [atom_types_image.count(atom) for atom in set(atom_types_image)]
 
         box, coord, energy, force, virial, image_nums = self.load_npy(npy_files, atom_nums)
 
@@ -83,13 +87,16 @@ class DPRAW(object):
 
         with open(type_map_raw, 'r') as f:
             type_map = f.read().splitlines()
-        atom_type = [ELEMENTTABLE[atom] for atom in type_map]
+        _atom_type = [ELEMENTTABLE[atom] for atom in type_map]
         
         with open(type_raw, 'r') as f:
             type = f.read().splitlines()
         atom_nums = len(type)
-        atom_types_image = [atom_type[int(atom)] for atom in type]
-        atom_type_num = [atom_types_image.count(atom) for atom in set(atom_types_image)]
+        atom_types_image = [_atom_type[int(atom)] for atom in type]
+        sc = Counter(atom_types_image)
+        atom_type = list(sc.keys())
+        atom_type_num = list(sc.values())
+        # atom_type_num = [atom_types_image.count(atom) for atom in set(atom_types_image)]
 
         box, coord, energy, force, virial, image_nums = self.load_raw(raw_files, atom_nums)
 

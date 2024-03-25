@@ -54,6 +54,10 @@ class Save_Data(object):
                 self.image_data = CP2KMD(data_path)
             elif format.lower() == 'cp2k/scf':
                 self.image_data = CP2KSCF(data_path)
+            elif format.lower() == 'deepmd/npy':
+                self.image_data = DPNPY(data_path)
+            elif format.lower() == 'deepmd/raw':
+                self.image_data = DPRAW(data_path)
         self.lattice, self.position, self.energies, self.ei, self.forces, self.virials, self.atom_type, self.atom_types_image, self.image_nums = get_pw(self.image_data.get())
 
         if train_ratio is not None:  # inference 时不存数据
