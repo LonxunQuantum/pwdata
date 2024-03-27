@@ -51,7 +51,7 @@ class DPNPY(object):
     def load_npy(self, npy_files, atom_nums):
         for npy_file in tqdm(npy_files, desc="Loading data"):
             if "box" in npy_file:
-                box = np.load(npy_file).reshape(-1, 3, 3)
+                box = np.load(npy_file).reshape(-1, 3, 3).astype(np.float64)
             elif "coord" in npy_file:
                 coord = np.load(npy_file).reshape(-1, atom_nums, 3)
             elif "energy" in npy_file:
