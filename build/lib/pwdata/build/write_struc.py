@@ -2,7 +2,6 @@ import numpy as np
 import os
 from collections import Counter
 from pwdata.build.cell import cell_to_cellpar
-from pwdata.lmps import Box2l
 from pwdata.calculators.const import elements, ELEMENTMASSTABLE
 
 
@@ -163,7 +162,7 @@ def write_vasp(image,
         raise RuntimeError(
             'Lattice vectors must be finite and not coincident. '
             'At least one lattice length or angle is zero.')
-
+    
     # Write atom positions in scaled or cartesian coordinates
     if direct and image.cartesian:                      # cartesian -> direct
         coord = image.get_scaled_positions(wrap=wrap)   
@@ -292,12 +291,13 @@ def write_lammps(image,
                 'At least one lattice length or angle is zero.')
     
         # Write atom positions in cartesian coordinates
-        if direct and image.cartesian:                      # cartesian -> direct
+        if image.cartesian:                      # cartesian -> direct
             coord = image.get_scaled_positions(wrap=wrap)   
-        elif not direct and not image.cartesian:            # direct -> cartesian
+            image._set_orthorhombic()
+        else:            # direct -> cartesian
+            image._set_orthorhombic()
             coord = image._set_cartesian().position
-        else:                                               # get cartesian/direct
-            coord = image.position
+
         
         if sort:
             if len(image.get_atomic_numbers()) == 0:
@@ -324,8 +324,6 @@ def write_lammps(image,
             atom_type = image.atom_type
             atom_type_num = image.atom_type_num
 
-        lmps_box = Box2l(image.lattice)
-
         p = 1
         atype = []
         # atom num & type list 
@@ -344,24 +342,24 @@ def write_lammps(image,
         # output preparation
         # return [xx,xy,yy,xz,yz,zz]
         xlo = 0.0
-        xhi = lmps_box[0]
+        xhi = image.lattice[0][0]
         ylo = 0.0
-        yhi = lmps_box[2]
+        yhi = image.lattice[1][1]
         zlo = 0.0
-        zhi = lmps_box[5]
-        xy = lmps_box[1]
-        xz = lmps_box[3]
-        yz = lmps_box[4]
+        zhi = image.lattice[2][2]
+        xy = image.lattice[1][0]
+        xz = image.lattice[2][0]
+        yz = image.lattice[2][1]
 
         LX = np.zeros([atom_nums,3],dtype=float)
         A = np.zeros([3,3],dtype=float)
 
-        A[0,0] = lmps_box[0]
-        A[0,1] = lmps_box[1]
-        A[1,1] = lmps_box[2]
-        A[0,2] = lmps_box[3]
-        A[1,2] = lmps_box[4]
-        A[2,2] = lmps_box[5]
+        A[0,0] = image.lattice[0][0]
+        A[1,0] = image.lattice[1][0]
+        A[1,1] = image.lattice[1][1]
+        A[2,0] = image.lattice[2][0]
+        A[2,1] = image.lattice[2][1]
+        A[2,2] = image.lattice[2][2]
 
         print("converted LAMMPS upper trangualr box:")
     
@@ -372,11 +370,11 @@ def write_lammps(image,
         # A.T x = LX
         # LX = A*x in LAMMPS. see https://docs.lammps.org/Howto_triclinic.html
 
-        if direct:
+        if not image.cartesian:
             for i in range(atom_nums):
-                LX[i,0] = A[0,0]*x[i,0] + A[0,1]*x[i,1] + A[0,2]*x[i,2]
-                LX[i,1] = A[1,0]*x[i,0] + A[1,1]*x[i,1] + A[1,2]*x[i,2]
-                LX[i,2] = A[2,0]*x[i,0] + A[2,1]*x[i,1] + A[2,2]*x[i,2]
+                LX[i,0] = A[0,0]*x[i,0] + A[1,0]*x[i,1] + A[2,0]*x[i,2]
+                LX[i,1] = A[0,1]*x[i,0] + A[1,1]*x[i,1] + A[2,1]*x[i,2]
+                LX[i,2] = A[0,2]*x[i,0] + A[1,2]*x[i,1] + A[2,2]*x[i,2]
         else:
             for i in range(atom_nums):
                 LX[i,0] = x[i,0]

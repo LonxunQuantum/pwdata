@@ -1,7 +1,6 @@
 import numpy as np
 import os, sys, glob
 from math import ceil
-from collections import Counter
 from typing import (List, Union, Optional)
 # import time
 # os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -15,6 +14,7 @@ from pwdata.dump import DUMP
 from pwdata.lammpsdata import LMP
 from pwdata.cp2kdata import CP2KMD, CP2KSCF
 from pwdata.deepmd import DPNPY, DPRAW
+from pwdata.pwmlff import PWNPY
 from pwdata.movement_saver import save_to_movement
 from pwdata.extendedxyz import save_to_extxyz
 from pwdata.datasets_saver import save_to_dataset, get_pw, save_to_raw, save_to_npy
@@ -58,6 +58,8 @@ class Save_Data(object):
                 self.image_data = DPNPY(data_path)
             elif format.lower() == 'deepmd/raw':
                 self.image_data = DPRAW(data_path)
+            elif format.lower() == 'pwmlff/npy':
+                self.image_data = PWNPY(data_path)
         self.lattice, self.position, self.energies, self.ei, self.forces, self.virials, self.atom_type, self.atom_types_image, self.image_nums = get_pw(self.image_data.get())
 
         if train_ratio is not None:  # inference 时不存数据
@@ -184,6 +186,8 @@ class Config(object):
             image = DPNPY(data_path).image_list[index]
         elif format.lower() == 'deepmd/raw':
             image = DPRAW(data_path).image_list[index]
+        elif format.lower() == 'pwmlff/npy':
+            image = PWNPY(data_path).image_list[index]
         else:
             raise Exception("Error! The format of the input file is not supported!")
         return image

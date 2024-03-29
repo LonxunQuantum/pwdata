@@ -5,6 +5,7 @@ from pwdata.build.write_struc import write_config, write_vasp, write_lammps
 from pwdata.calculators.const import elements
 from pwdata.build.geometry import wrap_positions
 from pwdata.build.cell import scaled_positions
+from pwdata.lmps import Box2l
 # 1. initial the image class
 class Image(object):
     def __init__(self, 
@@ -176,7 +177,6 @@ class Image(object):
         plane."""
 
         fractional = scaled_positions(self.lattice, self.position)
-
         if wrap:
             for i, periodic in enumerate(self.pbc):
                 if periodic:
@@ -184,7 +184,7 @@ class Image(object):
                     # See the scaled_positions.py test.
                     fractional[:, i] %= 1.0
                     fractional[:, i] %= 1.0
-
+        self.cartesian = False
         return fractional
 
     def get_atomic_numbers(self):
@@ -194,6 +194,14 @@ class Image(object):
     def _get_positions(self):
         """Return reference to positions-array for in-place manipulations."""
         return self.arrays['position']
+    
+    def _set_orthorhombic(self):
+        """Set the cell to be orthorhombic."""
+        lattice = Box2l(self.lattice)
+        xx = [lattice[0], 0, 0]
+        yy = [lattice[1], lattice[2], 0]
+        zz = [lattice[3], lattice[4], lattice[5]]
+        self.lattice = [xx, yy, zz]
     
     def _set_cartesian(self):
         """Set positions in Cartesian coordinates."""
