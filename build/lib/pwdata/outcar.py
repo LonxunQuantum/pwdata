@@ -29,8 +29,8 @@ class OUTCAR(object):
                     atom_names.append(_ii.split('_')[0])
                 else:
                     atom_name = _ii
-                if atom_name not in atom_names:
-                    atom_names.append(atom_name)
+                    if atom_name not in atom_names:
+                        atom_names.append(atom_name)
             elif 'ions per type' in ii:
                 atom_type_num_ = [int(s) for s in ii.split()[4:]]
                 if atom_type_num is None:
@@ -52,24 +52,26 @@ class OUTCAR(object):
 
         max_scf_idx = 0
         prev_idx = 0
-        # temp_images = {}
         converged_images = []
         max_insw = -1
         for idx, ii in tqdm(enumerate(outcar_contents), total=len(outcar_contents), desc="Processing data"):
-            if "Ionic step" in ii:
-                if prev_idx == 0:
-                    prev_idx = idx
-                    # continue
-                else:
-                    # temp_images[idx] = outcar_contents[prev_idx:idx]
-                    if max_insw < nelm:
-                        converged_images.append(outcar_contents[max_scf_idx:idx])
-                max_insw = 0
+            # if "Ionic step" in ii:
+            #     if prev_idx == 0:
+            #         prev_idx = idx
+            #     else:
+            #         if max_insw < nelm:
+            #             converged_images.append(outcar_contents[max_scf_idx:idx])
+            #     max_insw = 0
             if "Iteration" in ii:
                 scf_index = int(ii.split()[3][:-1])
+                if scf_index == 1 and prev_idx != 0:
+                    if max_insw < nelm:
+                        converged_images.append(outcar_contents[max_scf_idx:idx])
+                    max_insw = 0
                 if scf_index > max_insw:
                     max_insw = scf_index
                     max_scf_idx = idx
+                prev_idx = idx
             if "Elapsed time (sec):" in ii:
                 if max_insw < nelm:
                     converged_images.append(outcar_contents[max_scf_idx:idx])

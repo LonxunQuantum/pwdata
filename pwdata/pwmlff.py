@@ -22,6 +22,7 @@ class PWNPY(object):
         atom_type, atomic_energy, Ep, force, atom_types_image, lattice, coord, stress, image_nums, atom_nums = self.load_npy(npy_files)
         lattice = lattice.reshape(-1, 3, 3)
         coord = coord.reshape(-1, atom_nums, 3)
+        force = force.reshape(-1, atom_nums, 3)
         for i in tqdm(range(image_nums), desc="Loading data"):
             image = Image(lattice=lattice[i], position=coord[i], force=force[i], Ep=Ep[i], stress=stress[i],
                           cartesian=False, image_nums=i, atom_nums=atom_nums,
@@ -55,5 +56,6 @@ class PWNPY(object):
 
         image_nums = len(Ep)
         atom_nums = len(atom_types_image)
+        stress = stress.reshape(-1, 3, 3) if stress is not None else None
 
-        return atom_type, atomic_energy.squeeze(), Ep.squeeze(), force.squeeze(), atom_types_image, lattice.squeeze(), coord.squeeze(), stress.squeeze(), image_nums, atom_nums
+        return atom_type, atomic_energy.squeeze(), Ep.squeeze(), force.squeeze(), atom_types_image, lattice.squeeze(), coord.squeeze(), stress, image_nums, atom_nums
