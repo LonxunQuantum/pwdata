@@ -40,7 +40,8 @@ class DPNPY(object):
         box, coord, energy, force, virial, image_nums = self.load_npy(npy_files, atom_nums)
 
         for i in range(image_nums):
-            image = Image(lattice=box[i], position=coord[i], force=force[i], Ep=energy[i], stress=virial[i],
+            virial_image = virial[i] if virial is not None else None
+            image = Image(lattice=box[i], position=coord[i], force=force[i], Ep=energy[i], stress=virial_image,
                           atom_type=atom_type, atom_nums=atom_nums, atom_types_image=atom_types_image, atom_type_num=atom_type_num,
                           cartesian=True, image_nums=i)
             atomic_energy, _, _, _ = np.linalg.lstsq([atom_type_num], np.array([image.Ep]), rcond=1e-3)
@@ -49,6 +50,7 @@ class DPNPY(object):
             self.image_list.append(image)
         
     def load_npy(self, npy_files, atom_nums):
+        virial = None
         for npy_file in tqdm(npy_files, desc="Loading data"):
             if "box" in npy_file:
                 box = np.load(npy_file).reshape(-1, 3, 3).astype(np.float64)

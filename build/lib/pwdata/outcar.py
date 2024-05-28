@@ -26,7 +26,10 @@ class OUTCAR(object):
                 # get atom names from POTCAR info, tested only for PAW_PBE ...
                 _ii = ii.split()[2]
                 if '_' in _ii:
-                    atom_names.append(_ii.split('_')[0])
+                    # atom_names.append(_ii.split('_')[0])
+                    atom_name = _ii.split('_')[0]
+                    if atom_name not in atom_names:
+                        atom_names.append(atom_name)
                 else:
                     atom_name = _ii
                     if atom_name not in atom_names:

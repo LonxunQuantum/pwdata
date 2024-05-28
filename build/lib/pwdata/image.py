@@ -239,10 +239,12 @@ def elements_to_order(atom_names, atom_types_image, atom_nums):
     Returns:
         list: Updated list of atom types per atom.
     """
-    for idx, name in enumerate(atom_names):
-        for ii in range(atom_nums):
-            if name in elements and atom_types_image[ii] == idx+1:
-                atom_types_image[ii] = elements.index(name)
+    # for idx, name in enumerate(atom_names):
+    #     for ii in range(atom_nums):
+    #         if name in elements and atom_types_image[ii] == idx+1:
+    #             atom_types_image[ii] = elements.index(name)
+    type_mapping = {idx+1: elements.index(name) for idx, name in enumerate(atom_names)}
+    atom_types_image = [type_mapping[atom_type] for atom_type in atom_types_image]
     return atom_types_image
 
 def frac2cart(position, lattice):

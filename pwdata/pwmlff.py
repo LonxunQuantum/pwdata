@@ -58,4 +58,4 @@ class PWNPY(object):
         atom_nums = len(atom_types_image)
         stress = stress.reshape(-1, 3, 3) if stress is not None else None
 
-        return atom_type, atomic_energy.squeeze(), Ep.squeeze(), force.squeeze(), atom_types_image, lattice.squeeze(), coord.squeeze(), stress, image_nums, atom_nums
+        return atom_type, atomic_energy, Ep.squeeze(), force, atom_types_image, lattice, coord, stress, image_nums, atom_nums
