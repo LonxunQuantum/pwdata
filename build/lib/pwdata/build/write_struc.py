@@ -80,23 +80,10 @@ def write_config(image,
                         'constraints is parallel with one of the cell axis')
                 sflags[constr.a] = ~mask'''
 
-    # Create a list sc of (symbol, count) pairs
-    if symbol_count:
-        # sc = symbol_count
-        pass
-    elif image.atom_type is None:
-        sc = Counter(symbols)
-        atom_type = list(sc.keys())
-        atom_type_num = list(sc.values())
-    else:
-        atom_type = image.atom_type
-        atom_type_num = image.atom_type_num
-
-    atom_types_image = np.array(image.atom_types_image)
-
     if sort:
         if len(image.get_atomic_numbers()) == 0:
-            indices_dict = {type: np.where(atom_types_image == type)[0] for type in atom_type}
+            atom_types_image = np.array(image.atom_types_image)
+            indices_dict = {type: np.where(atom_types_image == type)[0] for type in image.atom_type}
             sorted_indices = np.concatenate([np.sort(indices) for indices in indices_dict.values()])
             symbols = atom_types_image[sorted_indices]
         else:
@@ -107,6 +94,18 @@ def write_config(image,
         #     sflags = sflags[ind]
     else:
         symbols = image.atom_types_image
+    
+    # Create a list sc of (symbol, count) pairs
+    if symbol_count:
+        # sc = symbol_count
+        pass
+    elif image.atom_type_num is None:
+        sc = Counter(symbols)
+        atom_type = list(sc.keys())
+        atom_type_num = list(sc.values())
+    else:
+        atom_type = image.atom_type
+        atom_type_num = image.atom_type_num
 
     # Write to file
     output_file = open(os.path.join(filepath, data_name), 'w')
@@ -199,24 +198,12 @@ def write_vasp(image,
                         'VASP requires that the direction of FixedLine '
                         'constraints is parallel with one of the cell axis')
                 sflags[constr.a] = ~mask'''
-    
-    # Create a list sc of (symbol, count) pairs
-    if symbol_count:
-        # sc = symbol_count
-        pass
-    elif image.atom_type is None:
-        sc = Counter(symbols)
-        atom_type = list(sc.keys())
-        atom_type_num = list(sc.values())
-    else:
-        atom_type = image.atom_type
-        atom_type_num = image.atom_type_num
 
-    atom_types_image = np.array(image.atom_types_image)
 
     if sort:
         if len(image.get_atomic_numbers()) == 0:
-            indices_dict = {type: np.where(atom_types_image == type)[0] for type in atom_type}
+            atom_types_image = np.array(image.atom_types_image)
+            indices_dict = {type: np.where(atom_types_image == type)[0] for type in image.atom_type}
             sorted_indices = np.concatenate([np.sort(indices) for indices in indices_dict.values()])
             symbols = atom_types_image[sorted_indices]
         else:
@@ -228,6 +215,18 @@ def write_vasp(image,
     else:
         symbols = image.atom_types_image
     
+    # Create a list sc of (symbol, count) pairs
+    if symbol_count:
+        # sc = symbol_count
+        pass
+    elif image.atom_type_num is None:
+        sc = Counter(symbols)
+        atom_type = list(sc.keys())
+        atom_type_num = list(sc.values())
+    else:
+        atom_type = image.atom_type
+        atom_type_num = image.atom_type_num
+        
     atom_type = [elements[_] for _ in atom_type]
     # Write to file
     output_file = open(os.path.join(filepath, data_name), 'w')
@@ -304,33 +303,32 @@ def write_lammps(image,
             image._set_orthorhombic()
             coord = image._set_cartesian().position
 
-        # Create a list sc of (symbol, count) pairs
-        if symbol_count:
-            # sc = symbol_count
-            pass
-        elif image.atom_type is None:
-            sc = Counter(symbols)
-            atom_type = list(sc.keys())
-            atom_type_num = list(sc.values())
-        else:
-            atom_type = image.atom_type
-            atom_type_num = image.atom_type_num
-
-        atom_types_image = np.array(image.atom_types_image)
-
         if sort:
             if len(image.get_atomic_numbers()) == 0:
-                indices_dict = {type: np.where(atom_types_image == type)[0] for type in atom_type}
+                atom_types_image = np.array(image.atom_types_image)
+                indices_dict = {type: np.where(atom_types_image == type)[0] for type in image.atom_type}
                 sorted_indices = np.concatenate([np.sort(indices) for indices in indices_dict.values()])
                 symbols = atom_types_image[sorted_indices]
             else:
                 sorted_indices = np.argsort(image.get_atomic_numbers())
                 symbols = np.array(image.get_atomic_numbers())[sorted_indices]
             coord = np.array(coord)[sorted_indices]
-                # if constraints:
-                #     sflags = sflags[ind]
+            # if constraints:
+            #     sflags = sflags[ind]
         else:
             symbols = image.atom_types_image
+        
+        # Create a list sc of (symbol, count) pairs
+        if symbol_count:
+            # sc = symbol_count
+            pass
+        elif image.atom_type_num is None:
+            sc = Counter(symbols)
+            atom_type = list(sc.keys())
+            atom_type_num = list(sc.values())
+        else:
+            atom_type = image.atom_type
+            atom_type_num = image.atom_type_num
 
         p = 1
         atype = []

@@ -21,7 +21,7 @@ def make_supercell(image_data, supercell_matrix: list, pbc: list = None, wrap=Tr
     lattice_points_frac = lattice_points_in_supercell(supercell_matrix)
     lattice_points = np.dot(lattice_points_frac, supercell)
 
-    superatoms = Image(lattice=supercell, pbc=pbc)
+    superatoms = Image(lattice=supercell, pbc=pbc, atom_type=image_data.atom_type)
     for lp in lattice_points:
         shifted_atoms = prim.copy()
         shifted_atoms.arrays['position'] += lp
