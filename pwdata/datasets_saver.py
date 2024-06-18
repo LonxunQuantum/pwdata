@@ -2,15 +2,83 @@ import numpy as np
 import os
 from collections import Counter
 from math import ceil
+from collections import defaultdict
 from pwdata.calculators.const import elements
 
 def save_to_dataset(image_data: list, datasets_path = "./PWdata", train_data_path = "train", valid_data_path = "valid",
                     train_ratio = None, random = True, seed = 2024, retain_raw = False, data_name = None):
     
-    """ Get and process the data from the input file. """
-    lattice, position, energies, ei, forces, virials, atom_type, atom_types_image, image_nums = get_pw(image_data)
+    if image_data[0].format == 'extxyz':
+        image_lists = defaultdict(list)
+        for image in image_data:
+            key = (image.formula, tuple(image.pbc))
+            image_lists[key].append(image)
+            
+        for key, image_data in image_lists.items():
+            data_name = key[0]
+            suffix = 0
+            while os.path.exists(os.path.join(datasets_path, data_name)):
+                suffix += 1
+                data_name = key[0] + "_" + str(suffix)
+            """ Get and process the data from the input file. """
+            lattice, position, energies, ei, forces, virials, atom_type, atom_types_image, image_nums = get_pw(image_data)
 
-    if data_name is None:
+            labels_path = os.path.join(datasets_path, data_name)
+            if not os.path.exists(datasets_path):
+                os.makedirs(datasets_path, exist_ok=True)
+            if not os.path.exists(labels_path):
+                os.makedirs(labels_path, exist_ok=True)
+
+            if seed:
+                np.random.seed(seed)
+            indices = np.arange(image_nums)    # 0, 1, 2, ..., image_nums-1
+            if random:
+                np.random.shuffle(indices)              # shuffle the indices
+            assert train_ratio is not None, "train_ratio must be set"
+            train_size = ceil(image_nums * train_ratio)
+            train_indices = indices[:train_size]
+            val_indices = indices[train_size:]
+            # image_nums = [image_nums]
+            atom_types_image = atom_types_image.reshape(1, -1)
+
+            train_data = [lattice[train_indices], position[train_indices], energies[train_indices],
+                        forces[train_indices], atom_types_image, atom_type,
+                        ei[train_indices]]
+            val_data = [lattice[val_indices], position[val_indices], energies[val_indices],
+                        forces[val_indices], atom_types_image, atom_type,
+                        ei[val_indices]]
+            
+            if len(virials) != 0:
+                train_data.append(virials[train_indices])
+                val_data.append(virials[val_indices])
+            else:
+                train_data.append([])
+                val_data.append([])
+
+            if train_ratio == 1.0 or len(val_indices) == 0:
+                labels_path = os.path.join(labels_path, train_data_path)
+                if not os.path.exists(labels_path):
+                    os.makedirs(labels_path)
+                if retain_raw:
+                    save_to_raw(train_data, train_data_path)
+                save_to_npy(train_data, labels_path)
+            else:
+                train_path = os.path.join(labels_path, train_data_path) 
+                val_path = os.path.join(labels_path, valid_data_path)
+                if not os.path.exists(train_path):
+                    os.makedirs(train_path)
+                if not os.path.exists(val_path):
+                    os.makedirs(val_path)
+                if retain_raw:
+                    save_to_raw(train_data, train_path)
+                    save_to_raw(val_data, val_path)
+                save_to_npy(train_data, train_path)
+                save_to_npy(val_data, val_path)
+    else:
+        """ Get and process the data from the input file. """
+        lattice, position, energies, ei, forces, virials, atom_type, atom_types_image, image_nums = get_pw(image_data)
+
+        if data_name is None:
             sc = Counter(atom_types_image)  # a list sc of (symbol, count) pairs
             temp_data_name = ''.join([elements[key] + str(count) for key, count in sc.items()])
             data_name = temp_data_name
@@ -18,60 +86,60 @@ def save_to_dataset(image_data: list, datasets_path = "./PWdata", train_data_pat
             while os.path.exists(os.path.join(datasets_path, data_name)):
                 suffix += 1
                 data_name = temp_data_name + "_" + str(suffix)
-    else:
-        pass
+        else:
+            pass
 
-    labels_path = os.path.join(datasets_path, data_name)
-    if not os.path.exists(datasets_path):
-        os.makedirs(datasets_path, exist_ok=True)
-    if not os.path.exists(labels_path):
-        os.makedirs(labels_path, exist_ok=True)
-    
-    if seed:
-        np.random.seed(seed)
-    indices = np.arange(image_nums)    # 0, 1, 2, ..., image_nums-1
-    if random:
-        np.random.shuffle(indices)              # shuffle the indices
-    assert train_ratio is not None, "train_ratio must be set"
-    train_size = ceil(image_nums * train_ratio)
-    train_indices = indices[:train_size]
-    val_indices = indices[train_size:]
-    # image_nums = [image_nums]
-    atom_types_image = atom_types_image.reshape(1, -1)
-
-    train_data = [lattice[train_indices], position[train_indices], energies[train_indices],
-                    forces[train_indices], atom_types_image, atom_type,
-                    ei[train_indices]]
-    val_data = [lattice[val_indices], position[val_indices], energies[val_indices],
-                    forces[val_indices], atom_types_image, atom_type,
-                    ei[val_indices]]
-    
-    if len(virials) != 0:
-        train_data.append(virials[train_indices])
-        val_data.append(virials[val_indices])
-    else:
-        train_data.append([])
-        val_data.append([])
-
-    if train_ratio == 1.0 or len(val_indices) == 0:
-        labels_path = os.path.join(labels_path, train_data_path)
+        labels_path = os.path.join(datasets_path, data_name)
+        if not os.path.exists(datasets_path):
+            os.makedirs(datasets_path, exist_ok=True)
         if not os.path.exists(labels_path):
-            os.makedirs(labels_path)
-        if retain_raw:
-            save_to_raw(train_data, train_data_path)
-        save_to_npy(train_data, labels_path)
-    else:
-        train_path = os.path.join(labels_path, train_data_path) 
-        val_path = os.path.join(labels_path, valid_data_path)
-        if not os.path.exists(train_path):
-            os.makedirs(train_path)
-        if not os.path.exists(val_path):
-            os.makedirs(val_path)
-        if retain_raw:
-            save_to_raw(train_data, train_path)
-            save_to_raw(val_data, val_path)
-        save_to_npy(train_data, train_path)
-        save_to_npy(val_data, val_path)
+            os.makedirs(labels_path, exist_ok=True)
+        
+        if seed:
+            np.random.seed(seed)
+        indices = np.arange(image_nums)    # 0, 1, 2, ..., image_nums-1
+        if random:
+            np.random.shuffle(indices)              # shuffle the indices
+        assert train_ratio is not None, "train_ratio must be set"
+        train_size = ceil(image_nums * train_ratio)
+        train_indices = indices[:train_size]
+        val_indices = indices[train_size:]
+        # image_nums = [image_nums]
+        atom_types_image = atom_types_image.reshape(1, -1)
+
+        train_data = [lattice[train_indices], position[train_indices], energies[train_indices],
+                        forces[train_indices], atom_types_image, atom_type,
+                        ei[train_indices]]
+        val_data = [lattice[val_indices], position[val_indices], energies[val_indices],
+                        forces[val_indices], atom_types_image, atom_type,
+                        ei[val_indices]]
+        
+        if len(virials) != 0:
+            train_data.append(virials[train_indices])
+            val_data.append(virials[val_indices])
+        else:
+            train_data.append([])
+            val_data.append([])
+
+        if train_ratio == 1.0 or len(val_indices) == 0:
+            labels_path = os.path.join(labels_path, train_data_path)
+            if not os.path.exists(labels_path):
+                os.makedirs(labels_path)
+            if retain_raw:
+                save_to_raw(train_data, train_data_path)
+            save_to_npy(train_data, labels_path)
+        else:
+            train_path = os.path.join(labels_path, train_data_path) 
+            val_path = os.path.join(labels_path, valid_data_path)
+            if not os.path.exists(train_path):
+                os.makedirs(train_path)
+            if not os.path.exists(val_path):
+                os.makedirs(val_path)
+            if retain_raw:
+                save_to_raw(train_data, train_path)
+                save_to_raw(val_data, val_path)
+            save_to_npy(train_data, train_path)
+            save_to_npy(val_data, val_path)
 
 def save_to_raw(data, directory):
     filenames = ["lattice.dat", "position.dat", "energies.dat", "forces.dat", "image_type.dat", "atom_type.dat", "ei.dat", "virials.dat"]

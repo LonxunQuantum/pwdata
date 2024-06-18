@@ -8,7 +8,7 @@ from pwdata.build.cell import scaled_positions
 from pwdata.lmps import Box2l
 # 1. initial the image class
 class Image(object):
-    def __init__(self, 
+    def __init__(self, formula = None, 
                  atom_type = None, atom_type_num = None, atom_nums = None, atom_types_image = None, 
                  iteration = None, Etot = None, Ep = None, Ek = None, scf = None, lattice = None, 
                  stress = None, position = None, force = None, atomic_energy = None,
@@ -35,6 +35,7 @@ class Image(object):
             image_nums (int): The number of images.
             pbc (list): three bool, Periodic boundary conditions flags.  Examples: [True, True, False] or [1, 1, 0]. True (1) means periodic, False (0) means non-periodic. Default: [False, False, False].
         """
+        self.formula = formula
         self.atom_nums = atom_nums
         self.iteration = iteration
         self.atom_type = atom_type

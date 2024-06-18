@@ -16,7 +16,7 @@ from pwdata.cp2kdata import CP2KMD, CP2KSCF
 from pwdata.deepmd import DPNPY, DPRAW
 from pwdata.pwmlff import PWNPY
 from pwdata.movement_saver import save_to_movement
-from pwdata.extendedxyz import save_to_extxyz
+from pwdata.extendedxyz import EXTXYZ, save_to_extxyz
 from pwdata.datasets_saver import save_to_dataset, get_pw, save_to_raw, save_to_npy
 from pwdata.build.write_struc import write_config, write_vasp, write_lammps
 
@@ -47,7 +47,7 @@ class Save_Data(object):
             elif format.lower() == "vasp/outcar":
                 self.image_data = OUTCAR(data_path)
             elif format.lower() == "extxyz":
-                pass
+                self.image_data = EXTXYZ(data_path)
             elif format.lower() == "vasp/xml":
                 pass
             elif format.lower() == 'cp2k/md':
@@ -175,7 +175,7 @@ class Config(object):
         elif format.lower() == "vasp/outcar":
             image = OUTCAR(data_path).image_list[index]
         elif format.lower() == "extxyz":
-            image = None
+            image = EXTXYZ(data_path, index).image_list[index]
         elif format.lower() == "vasp/xml":
             image = None
         elif format.lower() == 'cp2k/md':
