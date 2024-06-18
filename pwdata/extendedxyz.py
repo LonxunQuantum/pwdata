@@ -86,9 +86,10 @@ def save_to_extxyz(image_data_all: list, output_path: str, data_name: str, write
                             image_data.lattice[2][0], image_data.lattice[2][1], image_data.lattice[2][2])
         if image_data.stress is not None:
             output_head += 'stress="%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f"'
-            output_extended += (image_data.stress[0][0], image_data.stress[0][1], image_data.stress[0][2], 
-                                image_data.stress[1][0], image_data.stress[1][1], image_data.stress[1][2], 
-                                image_data.stress[2][0], image_data.stress[2][1], image_data.stress[2][2])
+            stress = image_data.get_stress()
+            output_extended += (stress[0][0], stress[0][1], stress[0][2], 
+                                stress[1][0], stress[1][1], stress[1][2], 
+                                stress[2][0], stress[2][1], stress[2][2])
         output_head += '\n'
         data_name.write(output_head % output_extended)
         for j in range(image_data.atom_nums):

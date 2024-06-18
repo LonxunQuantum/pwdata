@@ -192,6 +192,14 @@ class Image(object):
         """Get integer array of atomic numbers."""
         return self.arrays['atom_types_image'].copy()
     
+    def get_stress(self):
+        """Get stress tensor."""
+        return self._get_stress()
+    
+    def _get_stress(self):
+        stress = np.array(self.stress).reshape(3, 3)
+        return stress
+    
     def _get_positions(self):
         """Return reference to positions-array for in-place manipulations."""
         return self.arrays['position']
