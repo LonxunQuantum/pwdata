@@ -27,7 +27,7 @@ class MOVEMENT(object):
             elif "Lattice" in ii:
                 lattice_stress = self.parse_lattice_stress(mvm_contents[idx+1:idx+4])
                 image.lattice = lattice_stress["lattice"]
-                image.stress = lattice_stress["stress"]
+                image.virial = lattice_stress["virial"]
             elif " Position" in ii:
                 position = self.parse_position(mvm_contents[idx+1:idx+image.atom_nums+1])
                 image.position = position["position"]
@@ -71,11 +71,11 @@ class MOVEMENT(object):
         lattice2 = [float(_) for _ in self.number_pattern.findall(lattice_content[1])]
         lattice3 = [float(_) for _ in self.number_pattern.findall(lattice_content[2])]
         if "stress" in lattice_content[0]:
-            stress = [lattice1[3:], lattice2[3:], lattice3[3:]]
+            virial = [lattice1[3:], lattice2[3:], lattice3[3:]]
         else:
-            stress = []
+            virial = []
         lattice = [lattice1[:3], lattice2[:3], lattice3[:3]]
-        return {"lattice": lattice, "stress": stress}
+        return {"lattice": lattice, "virial": virial}
     
     def parse_position(self, position_content):
         atom_types_image = []

@@ -173,8 +173,8 @@ def get_pw(image_data):
         all_energies.append(image.Ep)
         all_forces.append(image.force)
         all_ei.append(image.atomic_energy)
-        if len(image.stress) != 0:
-            all_virials.append(image.stress)  
+        if len(image.virial) != 0:
+            all_virials.append(image.virial)  
     image_nums = len(image_data)
     atom_type = np.array(image.atom_type).reshape(1, -1)
     atom_types_image = np.array(image.atom_types_image)

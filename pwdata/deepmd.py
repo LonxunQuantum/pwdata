@@ -41,7 +41,7 @@ class DPNPY(object):
 
         for i in range(image_nums):
             virial_image = virial[i] if virial is not None else None
-            image = Image(lattice=box[i], position=coord[i], force=force[i], Ep=energy[i], stress=virial_image,
+            image = Image(lattice=box[i], position=coord[i], force=force[i], Ep=energy[i], virial=virial_image,
                           atom_type=atom_type, atom_nums=atom_nums, atom_types_image=atom_types_image, atom_type_num=atom_type_num,
                           cartesian=True, image_nums=i)
             atomic_energy, _, _, _ = np.linalg.lstsq([atom_type_num], np.array([image.Ep]), rcond=1e-3)
@@ -103,7 +103,7 @@ class DPRAW(object):
         box, coord, energy, force, virial, image_nums = self.load_raw(raw_files, atom_nums)
 
         for i in range(image_nums):
-            image = Image(lattice=box[i], position=coord[i], force=force[i], Ep=energy[i], stress=virial[i],
+            image = Image(lattice=box[i], position=coord[i], force=force[i], Ep=energy[i], virial=virial[i],
                           atom_type=atom_type, atom_nums=atom_nums, atom_types_image=atom_types_image, atom_type_num=atom_type_num,
                           cartesian=True, image_nums=i)
             atomic_energy, _, _, _ = np.linalg.lstsq([atom_type_num], np.array([image.Ep]), rcond=1e-3)

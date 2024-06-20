@@ -8,10 +8,10 @@ from pwdata.build.cell import scaled_positions
 from pwdata.lmps import Box2l
 # 1. initial the image class
 class Image(object):
-    def __init__(self, formula = None, 
+    def __init__(self, formula = None,
                  atom_type = None, atom_type_num = None, atom_nums = None, atom_types_image = None, 
                  iteration = None, Etot = None, Ep = None, Ek = None, scf = None, lattice = None, 
-                 stress = None, position = None, force = None, atomic_energy = None,
+                 virial = None, position = None, force = None, atomic_energy = None,
                  content = None, image_nums = None, pbc = None, cartesian = None):
         """
         Represents an image in a AIMD trajectory.
@@ -27,7 +27,7 @@ class Image(object):
             Ek (float): The kinetic energy.
             scf (float): The index of the self-consistent field.
             lattice (list): The lattice vectors.
-            stress (list): The stress tensor.
+            virial (list): The virial tensor.
             position (list): The atomic positions.
             force (list): The atomic forces.
             atomic_energy (list): The atomic energies.
@@ -47,7 +47,7 @@ class Image(object):
         self.scf = scf
         self.image_nums = image_nums
         self.lattice = lattice if lattice is not None else []
-        self.stress = stress if stress is not None else []
+        self.virial = virial if virial is not None else []
         self.position = position if position is not None else []    # this position can be fractional coordinates or cartesian coordinates
         self.force = force if force is not None else []
         self.atomic_energy = atomic_energy if atomic_energy is not None else []
@@ -69,7 +69,7 @@ class Image(object):
         for name, a in prim_dict.items():
             atoms.arrays[name] = a.copy()
         return atoms
-    
+
     def to(self, output_path, data_name = None, save_format = None, direct = True, sort = False, wrap = False):
         """
         Write atoms object to a new file.
@@ -192,13 +192,22 @@ class Image(object):
         """Get integer array of atomic numbers."""
         return self.arrays['atom_types_image'].copy()
     
+    def get_virial(self):
+        """Get virial tensor."""
+        return self._get_virial()
+    
+    def _get_virial(self):
+        virial = np.array(self.virial).reshape(3, 3)
+        return virial
+    
     def get_stress(self):
         """Get stress tensor."""
-        return self._get_stress()
-    
-    def _get_stress(self):
-        stress = np.array(self.stress).reshape(3, 3)
+        stress = self.get_virial() / - self.get_volume()
         return stress
+
+    def get_volume(self):
+        """Get volume of the unit cell."""
+        return np.abs(np.linalg.det(self.lattice))
     
     def _get_positions(self):
         """Return reference to positions-array for in-place manipulations."""

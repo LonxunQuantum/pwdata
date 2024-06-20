@@ -19,8 +19,9 @@ def save_to_movement(image_data_all: list, output_path: str, data_name: str):
         data_name.write("          *******              \n")
         data_name.write("Lattice vector (Angstrom)\n")
         for j in range(3):
-            if image_data.stress != []:
-                data_name.write("  %16.10E    %16.10E    %16.10E     stress (eV): %16.10E    %16.10E    %16.10E\n" % (image_data.lattice[j][0], image_data.lattice[j][1], image_data.lattice[j][2], image_data.virials[j][0], image_data.virials[j][1], image_data.virials[j][2]))
+            if image_data.virial is not None:
+                virial = image_data.get_virial()
+                data_name.write("  %16.10E    %16.10E    %16.10E     stress (eV): %16.10E    %16.10E    %16.10E\n" % (image_data.lattice[j][0], image_data.lattice[j][1], image_data.lattice[j][2], virial[j][0], virial[j][1], virial[j][2]))
             else:
                 data_name.write("  %16.10E    %16.10E    %16.10E\n" % (image_data.lattice[j][0], image_data.lattice[j][1], image_data.lattice[j][2]))
         data_name.write("  Position (normalized), move_x, move_y, move_z\n")

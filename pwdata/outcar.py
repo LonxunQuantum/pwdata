@@ -87,7 +87,7 @@ class OUTCAR(object):
                     image.scf = int(line.split()[3][:-1])
                 elif "in kB" in line:
                     virial_info = self.parse_virial_info(converged_image[idx - 1])
-                    image.stress = virial_info["virial"]
+                    image.virial = virial_info["virial"]
                 elif "VOLUME and BASIS" in line:
                     lattice_info = self.parse_lattice(converged_image[idx+5:idx+8])
                     image.lattice = lattice_info["lattice"]

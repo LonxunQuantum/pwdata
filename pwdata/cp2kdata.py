@@ -53,8 +53,8 @@ class CP2KMD(object):
                 self.image_list.append(image)
             elif "STRESS| Analytical stress tensor" in ii:
                 stress_info = parse_stress(stdout_contents[idx+2:idx+5])
-                stress = gpa2ev(stress_info["stress"], volume)
-                image.stress = stress
+                virial = gpa2ev(stress_info["stress"], volume)
+                image.virial = virial
               
     def read_pdb(self, traj_file):
         with open(traj_file, "r") as f:
@@ -208,8 +208,8 @@ class CP2KSCF(object):
                 image.force = force_info["force"]
             elif "STRESS| Analytical stress tensor" in ii:
                 stress_info = parse_stress(stdout_contents[idx+2:idx+5])
-                stress = gpa2ev(stress_info["stress"], volume)
-                image.stress = stress
+                virial = gpa2ev(stress_info["stress"], volume)
+                image.virial = virial
     
     def parse_position(self, position_content):
         position = [[float(_) for _ in atom.split()[4:7]] for atom in position_content]

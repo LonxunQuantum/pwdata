@@ -41,7 +41,7 @@ class EXTXYZ(object):
                     pass
                 else:
                     # virial = -stress * volume
-                    image.stress = - Atoms[i].get_volume() * stress
+                    image.virial = - Atoms[i].get_volume() * stress
                 image.format = 'extxyz'
                 self.image_list.append(image)
         else:
@@ -67,7 +67,7 @@ class EXTXYZ(object):
             except AttributeError:
                 pass
             else:
-                image.stress = - Atoms.get_volume() * stress
+                image.virial = - Atoms.get_volume() * stress
             image.format = 'extxyz'
             self.image_list.append(image)
 
@@ -84,12 +84,12 @@ def save_to_extxyz(image_data_all: list, output_path: str, data_name: str, write
         output_extended = (image_data.lattice[0][0], image_data.lattice[0][1], image_data.lattice[0][2], 
                             image_data.lattice[1][0], image_data.lattice[1][1], image_data.lattice[1][2], 
                             image_data.lattice[2][0], image_data.lattice[2][1], image_data.lattice[2][2])
-        if image_data.stress is not None:
-            output_head += 'stress="%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f"'
-            stress = image_data.get_stress()
-            output_extended += (stress[0][0], stress[0][1], stress[0][2], 
-                                stress[1][0], stress[1][1], stress[1][2], 
-                                stress[2][0], stress[2][1], stress[2][2])
+        if image_data.virial is not None:
+            output_head += 'virial="%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f"'
+            virial = image_data.get_virial()
+            output_extended += (virial[0][0], virial[0][1], virial[0][2], 
+                                virial[1][0], virial[1][1], virial[1][2], 
+                                virial[2][0], virial[2][1], virial[2][2])
         output_head += '\n'
         data_name.write(output_head % output_extended)
         for j in range(image_data.atom_nums):
