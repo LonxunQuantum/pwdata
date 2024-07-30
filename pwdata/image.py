@@ -47,7 +47,7 @@ class Image(object):
         self.scf = scf
         self.image_nums = image_nums
         self.lattice = lattice if lattice is not None else []
-        self.virial = virial if virial is not None else []
+        self.virial = virial
         self.position = position if position is not None else []    # this position can be fractional coordinates or cartesian coordinates
         self.force = force if force is not None else []
         self.atomic_energy = atomic_energy if atomic_energy is not None else []
