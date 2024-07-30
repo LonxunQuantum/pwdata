@@ -24,7 +24,7 @@ class PWNPY(object):
         coord = coord.reshape(-1, atom_nums, 3)
         force = force.reshape(-1, atom_nums, 3)
         for i in tqdm(range(image_nums), desc="Loading data"):
-            image = Image(lattice=lattice[i], position=coord[i], force=force[i], Ep=Ep[i], virial=virial[i],
+            image = Image(lattice=lattice[i], position=coord[i], force=force[i], Ep=Ep[i], virial=virial[i] if virial is not None else None,
                           cartesian=False, image_nums=i, atom_nums=atom_nums,
                           atomic_energy=atomic_energy[i], atom_type=atom_type, atom_types_image=atom_types_image) 
             self.image_list.append(image)
