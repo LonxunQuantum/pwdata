@@ -68,7 +68,8 @@ class DUMP(object):
                 image.atom_type_num = info["atom_type_num"]
                 image.atom_types_image = info["atom_types_image"]
                 image.position = info["positions"]
-                image.force = info["forces"]
+                if "forces" in info.keys():
+                    image.force = info["forces"]
                 image.pbc = pbc
                 image.cartesian = True
 
