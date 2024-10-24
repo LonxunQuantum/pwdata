@@ -6,3 +6,7 @@ pwdata.egg-info/
 __pycache__/
 pwdata/__pycache__/
 setup.py
+pwdata/test.py
+test.py
+tmp.py
+#

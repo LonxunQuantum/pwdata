@@ -20,6 +20,9 @@ from pwdata.extendedxyz import EXTXYZ, save_to_extxyz
 from pwdata.datasets_saver import save_to_dataset, get_pw, save_to_raw, save_to_npy
 from pwdata.build.write_struc import write_config, write_vasp, write_lammps
 
+from pwdata.convert_files import convert_files_to
+# from pwdata.open_data.meta_data import get_meta_data
+
 class Save_Data(object):
     def __init__(self, data_path, datasets_path = "./PWdata", train_data_path = "train", valid_data_path = "valid", 
                  train_ratio = None, random = True, seed = 2024, format = None, retain_raw = False, atom_names:list[str] = None) -> None:
@@ -279,46 +282,69 @@ def string2index(string: str) -> Union[int, slice, str]:
     i += (3 - len(i)) * [None]
     return slice(*i)
 
-if __name__ == "__main__":
-    import argparse
-    SUPERCELL_MATRIX = [[2, 0, 0], [0, 2, 0], [0, 0, 2]]
-    data_file = "/data/home/hfhuang/2_MLFF/2-DP/19-json-version/8-Si2/atom.config"
-    # data_file = "/data/home/hfhuang/9_cp2k/1-SiO2/cp2k.out"
-    # data_file = "/data/home/hfhuang/software/mlff/Si/Si64-vasprun.xml"
-    # data_file = "/data/home/hfhuang/2_MLFF/3-outcar2movement/0/OUTCARC3N4"
-    output_path = "/data/home/hfhuang/2_MLFF/2-DP/19-json-version/8-Si2/mlff/"
-    output_file = "supercell.config"
-    format = "config"
-    pbc = [1, 1, 1]
-    # config = Config.read(format, data_file, atom_names=["Si"], index=-1)   # read dump
-    config = Config.read(format, data_file)   
-    Config.to(file_path = output_path,
-                     file_name = output_file,
-                     file_format = 'config',
-                     direct = True,
-                     sort = False)
-    parser = argparse.ArgumentParser(description='Convert and build structures.')
-    parser.add_argument('--format', type=str, required=False, help='Format of the input file', default="outcar")
-    parser.add_argument('--save_format', type=str, required=False, help='Format of the output file', default="config")
-    parser.add_argument('--outcar_file', type=str, required=False, help='Path to the OUTCAR file')
-    parser.add_argument('--movement_file', type=str, required=False, help='Path to the MOVEMENT file')
-    parser.add_argument('--output_path', type=str, required=False, help='Path to the output directory', default="./")
-    parser.add_argument('--output_file', type=str, required=False, help='Name of the output file', default="MOVEMENT")
-    parser.add_argument('--supercell_matrix', type=list, required=False, help='Supercell matrix', default=[[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-    parser.add_argument('--pbc', type=list, required=False, help='Periodic boundary conditions flags', default=[1, 1, 1])
-    parser.add_argument('--direct', type=bool, required=False, help='Whether to write the positions in direct (frac) coordinates', default=True)
-    parser.add_argument('--sort', type=bool, required=False, help='Whether to sort the atoms by atomic number', default=True)
-    parser.add_argument('--pert_num', type=int, required=False, help='Number of perturbed structures', default=50)
-    parser.add_argument('--cell_pert_fraction', type=float, required=False, help='Fraction of the cell perturbation', default=0.03)
-    parser.add_argument('--atom_pert_distance', type=float, required=False, help='Distance of the atom perturbation', default=0.01)
-    parser.add_argument('--retain_raw', type=bool, required=False, help='Whether to retain raw data', default=False)
-    parser.add_argument('--train_ratio', type=float, required=False, help='Ratio of training data', default=0.8)
-    parser.add_argument('--random', type=bool, required=False, help='Whether to shuffle the data', default=True)
-    parser.add_argument('--scale_factor', type=float, required=False, help='Scale factor of the lattice', default=1.0)
-    parser.add_argument('--seed', type=int, required=False, help='Random seed', default=2024)
-    parser.add_argument('--index', type=Union[int, slice, str], required=False, help='Index of the configuration', default=-1)
-    parser.add_argument('--atom_names', type=list, required=False, help='Names of the atoms', default=["H"])
-    parser.add_argument('--style', type=str, required=False, help='Style of the lammps input file', default="atomic")
+"""
+pwdata convert -i dirs -f extxyz -s dir 
+"""
+def run_cmd():
+    from check_envs import print_cmd
+    if len(sys.argv) == 1 or "-h".upper() == sys.argv[1].upper() or \
+        "help".upper() == sys.argv[1].upper() or "-help".upper() == sys.argv[1].upper() or "--help".upper() == sys.argv[1].upper():
+        print_cmd()
     
-    args = parser.parse_args()
+    elif "convert_config".upper() == sys.argv[1].upper():
+        pass
+
+    elif "meta".upper() == sys.argv[1].upper():
+        # select 
+        # get_meta_data(sys.argv[2:])
+        pass
+
+if __name__ == "__main__":
+    # import argparse
+    # SUPERCELL_MATRIX = [[2, 0, 0], [0, 2, 0], [0, 0, 2]]
+    # data_file = "/data/home/hfhuang/2_MLFF/2-DP/19-json-version/8-Si2/atom.config"
+    # # data_file = "/data/home/hfhuang/9_cp2k/1-SiO2/cp2k.out"
+    # # data_file = "/data/home/hfhuang/software/mlff/Si/Si64-vasprun.xml"
+    # # data_file = "/data/home/hfhuang/2_MLFF/3-outcar2movement/0/OUTCARC3N4"
+    # output_path = "/data/home/hfhuang/2_MLFF/2-DP/19-json-version/8-Si2/mlff/"
+    # output_file = "supercell.config"
+    # format = "config"
+    # pbc = [1, 1, 1]
+    # # config = Config.read(format, data_file, atom_names=["Si"], index=-1)   # read dump
+    # config = Config.read(format, data_file)   
+    # Config.to(file_path = output_path,
+    #                  file_name = output_file,
+    #                  file_format = 'config',
+    #                  direct = True,
+    #                  sort = False)
+    # parser = argparse.ArgumentParser(description='Convert and build structures.')
+    # parser.add_argument('--format', type=str, required=False, help='Format of the input file', default="outcar")
+    # parser.add_argument('--save_format', type=str, required=False, help='Format of the output file', default="config")
+    # parser.add_argument('--outcar_file', type=str, required=False, help='Path to the OUTCAR file')
+    # parser.add_argument('--movement_file', type=str, required=False, help='Path to the MOVEMENT file')
+    # parser.add_argument('--output_path', type=str, required=False, help='Path to the output directory', default="./")
+    # parser.add_argument('--output_file', type=str, required=False, help='Name of the output file', default="MOVEMENT")
+    # parser.add_argument('--supercell_matrix', type=list, required=False, help='Supercell matrix', default=[[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    # parser.add_argument('--pbc', type=list, required=False, help='Periodic boundary conditions flags', default=[1, 1, 1])
+    # parser.add_argument('--direct', type=bool, required=False, help='Whether to write the positions in direct (frac) coordinates', default=True)
+    # parser.add_argument('--sort', type=bool, required=False, help='Whether to sort the atoms by atomic number', default=True)
+    # parser.add_argument('--pert_num', type=int, required=False, help='Number of perturbed structures', default=50)
+    # parser.add_argument('--cell_pert_fraction', type=float, required=False, help='Fraction of the cell perturbation', default=0.03)
+    # parser.add_argument('--atom_pert_distance', type=float, required=False, help='Distance of the atom perturbation', default=0.01)
+    # parser.add_argument('--retain_raw', type=bool, required=False, help='Whether to retain raw data', default=False)
+    # parser.add_argument('--train_ratio', type=float, required=False, help='Ratio of training data', default=0.8)
+    # parser.add_argument('--random', type=bool, required=False, help='Whether to shuffle the data', default=True)
+    # parser.add_argument('--scale_factor', type=float, required=False, help='Scale factor of the lattice', default=1.0)
+    # parser.add_argument('--seed', type=int, required=False, help='Random seed', default=2024)
+    # parser.add_argument('--index', type=Union[int, slice, str], required=False, help='Index of the configuration', default=-1)
+    # parser.add_argument('--atom_names', type=list, required=False, help='Names of the atoms', default=["H"])
+    # parser.add_argument('--style', type=str, required=False, help='Style of the lammps input file', default="atomic")
+    
+    # args = parser.parse_args()
+    
+    run_cmd()
+
+    # config = Config.read("vasp/outcar", 
+    #     "/data/home/wuxingxing/datas/al_dir/si_4_vasp/init_bulk/temp_init_bulk_work/aimd/init_config_0/0.9_scale/3_aimd/OUTCAR")
+    # print()
     
