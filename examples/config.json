@@ -1,0 +1,72 @@
+{
+    "convert_image":[
+        {
+            "input_file":"./pwmat_data/lisi_atom.config",
+            "input_format":"pwmat/config"
+        },
+        {
+            "input_file":"./pwmat_data/LiGePS_atom.config",
+            "input_format":"pwmat/config"
+        },
+        {
+            "input_file":"./lmps_data/HfO2/96.lmp",
+            "input_format":"lammps/lmp",
+            "atom_types": ["Hf", "O"]
+        },
+        {
+            "input_file":"./vasp_data/Si_POSCAR",
+            "input_format":"vasp/poscar"
+        },
+        {
+            "input_file":"./vasp_data/LiSi_POSCAR",
+            "input_format":"vasp/poscar"
+        }
+    ],
+    "convert_images":[
+        {
+            "input_file":"./pwmlff_data/LiSiC",
+            "input_format":"pwmlff/npy"
+        },
+        {
+            "input_file":["./pwmlff_data/LiSiC/Si217", "./pwmlff_data/LiSiC/C2", "./pwmlff_data/LiSiC/Si1", "./pwmlff_data/LiSiC/C64Si32", "./pwmlff_data/LiSiC/Li1Si24", "./pwmlff_data/LiSiC/C64Si32"],
+            "input_format":"pwmlff/npy"
+        },
+        {
+          "input_file":"./pwmat_data/50_LiGePS_movement",
+          "input_format":"pwmat/movement"  
+        },
+        {
+            "input_file":["./pwmat_data/50_LiGePS_movement", "./pwmat_data/lisi_50_movement"],
+            "input_format":"pwmat/movement"              
+        },
+        {
+            "input_file":"./vasp_data/Si_OUTCAR",
+            "input_format":"vasp/outcar"  
+        },
+        {
+            "input_file":["./xyz_data/PbPt.xyz", "./xyz_data/gap_c.xyz", "./xyz_data/metal_1.xyz"],
+            "input_format":"extxyz"
+        },
+        {
+            "input_file":"./deepmd_data/alloy/IrNi_POSCAR/deepmd",
+            "input_format":"deepmd/npy"  
+        },
+        {
+            "input_file":["./deepmd_data/alloy/IrNi_POSCAR/deepmd", "./deepmd_data/alloy/IrPdNi_POSCAR/deepmd", "./deepmd_data/alloy/RhIrPdNi_POSCAR/deepmd"],
+            "input_format":"deepmd/npy"
+        },
+        {
+            "input_file":"./cp2k_data/dft.log",
+            "input_format":"cp2k/md"
+        },
+        {
+            "input_file":["./lmps_data/HfO2/0.lammpstrj", "./lmps_data/HfO2/10.lammpstrj", "./lmps_data/HfO2/20.lammpstrj", "./lmps_data/HfO2/30.lammpstrj"],
+            "input_format":"lammps/dump",
+            "atom_types": ["Hf", "O"] 
+        }
+    ],
+    "done":[
+        
+    ]
+}
+

@@ -20,7 +20,7 @@ def write_config(image,
     positions scaled coordinates (Direct), and constraints
     to file. fractional coordinates is default.
     """
-    assert direct==True, "PWmat only support direct coordinates"
+    # assert direct==True, "PWmat only support direct coordinates"
     atom_nums = len(image) if image.atom_nums is None else image.atom_nums
     if isinstance(image, (list, tuple)):
         if atom_nums > 1:

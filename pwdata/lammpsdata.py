@@ -323,7 +323,7 @@ class LMP(object):
             ids[ind] = id
             # by type
             types[ind] = type
-            if atom_names is None:
+            if len(atom_names) == 0:
                 atom_types_image[ind] = type
             else:
                 atom_types_image[ind] = atom_names[type - 1]

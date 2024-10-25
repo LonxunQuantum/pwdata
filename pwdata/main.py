@@ -19,8 +19,9 @@ from pwdata.movement_saver import save_to_movement
 from pwdata.extendedxyz import EXTXYZ, save_to_extxyz
 from pwdata.datasets_saver import save_to_dataset, get_pw, save_to_raw, save_to_npy
 from pwdata.build.write_struc import write_config, write_vasp, write_lammps
-
-from pwdata.convert_files import convert_files_to
+import argparse
+from pwdata.convert_files import do_scale_cell, do_super_cell, do_perturb, do_convert_config, do_convert_images
+from pwdata.utils.constant import FORMAT
 # from pwdata.open_data.meta_data import get_meta_data
 
 class Save_Data(object):
@@ -285,66 +286,167 @@ def string2index(string: str) -> Union[int, slice, str]:
 """
 pwdata convert -i dirs -f extxyz -s dir 
 """
-def run_cmd():
+def run_cmd(cmd_list:list):
     from check_envs import print_cmd
-    if len(sys.argv) == 1 or "-h".upper() == sys.argv[1].upper() or \
-        "help".upper() == sys.argv[1].upper() or "-help".upper() == sys.argv[1].upper() or "--help".upper() == sys.argv[1].upper():
+    if len(cmd_list) == 1 or "-h".upper() == cmd_list[1].upper() or \
+        "help".upper() == cmd_list[1].upper() or "-help".upper() == cmd_list[1].upper() or "--help".upper() == cmd_list[1].upper():
         print_cmd()
-    
-    elif "convert_config".upper() == sys.argv[1].upper():
+    elif "scale_cell".upper() == cmd_list[1].upper():
+        run_scale_cell(cmd_list[2:])
+    elif "super_cell".upper() == cmd_list[1].upper():
+        run_super_cell(cmd_list[2:])
+    elif "pertub".upper() == cmd_list[1].upper():
+        run_pertub(cmd_list[2:])
+    elif "convert_config".upper() == cmd_list[1].upper():
+        run_convert_config(cmd_list[2:])
+    elif "convert_images".upper() == cmd_list[1].upper():
+        run_convert_images(cmd_list[2:])
+    elif "meta".upper() == cmd_list[1].upper():
+        # select 
+        # get_meta_data(cmd_list[2:])
         pass
 
-    elif "meta".upper() == sys.argv[1].upper():
-        # select 
-        # get_meta_data(sys.argv[2:])
-        pass
+def run_scale_cell(cmd_list:list[str]):
+    parser = argparse.ArgumentParser(description='This command is used to scaled the structural lattice.')
+    parser.add_argument('-r', '--scale_factor', type=float, required=True, help="floating point number (0.0, 1.0), the scaling factor of the unit cell.")
+    parser.add_argument('-i', '--input',         type=str, required=True, help='The input file path')
+    parser.add_argument('-f', '--input_format',  type=str, required=True, help="The input file format, the supported format as 'pwmat/config','vasp/poscar', 'lammps/lmp', 'cp2k/scf'")
+    parser.add_argument('-s', '--savename',      type=str, required=False, help="The output file name, if not provided, the 'atom.config' for pwmat/config, 'POSCAR' for vasp/poscar, 'lammps.lmp' for lammps/lmp will be used", default=None)
+    parser.add_argument('-o', '--output_format', type=str, required=False, help="the output file format, only support the format ['pwmat/config','vasp/poscar', 'lammps/lmp'], if not provided, the input format be used. \nNote: that outputting cp2k/scf format is not supported. In this case, the default will be adjusted to pwmat atom.config", default=None)
+    parser.add_argument('-d', '--cartesian', action='store_true', help="if '-d' is set, the cartesian coordinates will be used, otherwise the fractional coordinates will be used.")
+    parser.add_argument('-t', '--atom_types',    type=str, required=False, nargs='+', help="the atom type list of lammps lmp/dump file, the order is same as lammps dump file", default=None)
+    args = parser.parse_args(cmd_list)
+    FORMAT.check_format(args.input_format, FORMAT.support_config_format)
+    if args.savename is None:
+        args.savename = FORMAT.get_filename_by_format(args.input_format)
+    if args.output_format is None:
+        if args.input_format == FORMAT.cp2k_scf:
+            args.output_format = FORMAT.pwmat_config
+            args.savename = FORMAT.pwmat_config_name
+            print("Warning: The input format is 'cp2k/scf', the output automatically adjust to to atom.config with format pwmat/config\n")
+        args.output_format = args.input_format
+    else:
+        FORMAT.check_format(args.output_format, [FORMAT.pwmat_config, FORMAT.vasp_poscar, FORMAT.lammps_lmp])
+    assert args.scale_factor > 0.0 and args.scale_factor <= 1.0, "The scale factor must be 0 < scale_factor < 1.0"
+
+    do_scale_cell(args.input, args.input_format, args.atom_types, args.savename, args.output_format, args.scale_factor, args.cartesian is False)
+    print("scaled the config done!")
+
+def run_super_cell(cmd_list:list[str]):
+    parser = argparse.ArgumentParser(description='Construct a supercell based on the input original structure and supercell matrix!')
+    parser.add_argument('-m', '--supercell_matrix', nargs='+', type=int, help="Supercell matrix (3x3). 3 or 9 values, for example, '2 0 0 0 2 0 0 0' or '2 2 2' represents that the supercell is 2x2x2", required=True)
+    parser.add_argument('-i', '--input',         type=str, required=True, help='The input file path')
+    parser.add_argument('-f', '--input_format',  type=str, required=True, help="The input file format, the supported format as 'pwmat/config','vasp/poscar', 'lammps/lmp', 'cp2k/scf'")
+    parser.add_argument('-s', '--savename',      type=str, required=False, help="The output file name, if not provided, the 'atom.config' for pwmat/config, 'POSCAR' for vasp/poscar, 'lammps.lmp' for lammps/lmp will be used", default=None)
+    parser.add_argument('-o', '--output_format', type=str, required=False, help="the output file format, only support the format ['pwmat/config','vasp/poscar', 'lammps/lmp'], if not provided, the input format be used. \nNote: that outputting cp2k/scf format is not supported. In this case, the default will be adjusted to pwmat atom.config", default=None)
+    parser.add_argument('-d', '--cartesian', action='store_true', help="if '-d' is set, the cartesian coordinates will be used, otherwise the fractional coordinates will be used.")
+    parser.add_argument('-p', '--periodicity', nargs='+', type=int, required=False, help="'-p 1 1 1' indicates that the system is periodic in the x, y, and z directions.", default=[1,1,1])
+    parser.add_argument('-l', '--tolerance', type=float, required=False, help="Tolerance of fractional coordinates. The default is 1e-5. Prevent slight negative coordinates from being mapped into the simulation box.", default=1e-5)
+    parser.add_argument('-t', '--atom_types',    type=str, required=False, nargs='+', help="the atom type list of lammps lmp/dump file, the order is same as lammps dump file", default=None)
+    args = parser.parse_args(cmd_list)
+    FORMAT.check_format(args.input_format, FORMAT.support_config_format)
+    if args.savename is None:
+        args.savename = FORMAT.get_filename_by_format(args.input_format)
+    if args.output_format is None:
+        if args.input_format == FORMAT.cp2k_scf:
+            args.output_format = FORMAT.pwmat_config
+            args.savename = FORMAT.pwmat_config_name
+            print("Warning: The input format is 'cp2k/scf', the output automatically adjust to to atom.config with format pwmat/config\n")
+        args.output_format = args.input_format
+    else:
+        FORMAT.check_format(args.output_format, [FORMAT.pwmat_config, FORMAT.vasp_poscar, FORMAT.lammps_lmp])
+    assert len(args.supercell_matrix) == 3 or len(args.supercell_matrix) == 9, "The supercell matrix must be 3 or 9 values"
+    if len(args.supercell_matrix) == 3:
+        args.supercell_matrix = np.diag(args.supercell_matrix)
+
+    do_super_cell(args.input, args.input_format, args.atom_types, args.savename, args.output_format, args.supercell_matrix, args.cartesian is False, pbc=args.periodicity, tol=args.tolerance)
+    print("supercell the config done!")
+
+
+def run_pertub(cmd_list:list[str]):
+    parser = argparse.ArgumentParser(description='Disturb the atomic positions and unit cells of the structure!')
+    parser.add_argument('-c', '--cell_pert_fraction', type=float, help="The degree of deformation of the unit cell. \nAdd randomly sampled values from a uniform distribution within the range of [-cell_pert_fraction, cell_pert_fraction] to each of the 9 lattice values. For example, 0.03, indicating that the degree of deformation of the unit cell is 3% relative to the original unit cell.", required=True)
+    parser.add_argument('-a', '--atom_pert_distance', type=float, help="The distance of atomic perturbation determines the relative movement distance of the atom from its original position. Perturbation is the distance measured in angstroms. For example, 0.01 represents an atomic movement distance of 0.01 angstroms.", required=True)
+    parser.add_argument('-n', '--pert_num',      type=int, help="The number of generated perturbation structures.", required=True)
+    parser.add_argument('-i', '--input',         type=str, required=True, help='The input file path')
+    parser.add_argument('-f', '--input_format',  type=str, required=True, help="The input file format, the supported format as 'pwmat/config','vasp/poscar', 'lammps/lmp', 'cp2k/scf'")
+    parser.add_argument('-s', '--savename',      type=str, required=False, help="The storage path of the structure output after perturbation, the default is './pertub'", default='./pertub')
+    parser.add_argument('-o', '--output_format', type=str, required=False, help="the output file format, only support the format ['pwmat/config','vasp/poscar', 'lammps/lmp'], if not provided, the input format be used. \nNote: that outputting cp2k/scf format is not supported. In this case, the default will be adjusted to pwmat atom.config", default=None)
+    parser.add_argument('-d', '--cartesian', action='store_true', help="if '-d' is set, the cartesian coordinates will be used, otherwise the fractional coordinates will be used.")
+    parser.add_argument('-p', '--periodicity', nargs='+', type=int, required=False, help="'-p 1 1 1' indicates that the system is periodic in the x, y, and z directions.", default=[1,1,1])
+    parser.add_argument('-l', '--tolerance', type=float, required=False, help="Tolerance of fractional coordinates. The default is 1e-5. Prevent slight negative coordinates from being mapped into the simulation box.", default=1e-5)
+    parser.add_argument('-t', '--atom_types',    type=str, required=False, nargs='+', help="the atom type list of lammps lmp/dump file, the order is same as lammps dump file", default=None)
+    
+    args = parser.parse_args(cmd_list)
+    FORMAT.check_format(args.input_format, FORMAT.support_config_format)
+    if args.savename is None:
+        args.savename = FORMAT.get_filename_by_format(args.input_format)
+    if args.output_format is None:
+        if args.input_format == FORMAT.cp2k_scf:
+            args.output_format = FORMAT.pwmat_config
+            args.savename = FORMAT.pwmat_config_name
+            print("Warning: The input format is 'cp2k/scf', the output automatically adjust to to atom.config with format pwmat/config\n")
+        args.output_format = args.input_format
+    else:
+        FORMAT.check_format(args.output_format, [FORMAT.pwmat_config, FORMAT.vasp_poscar, FORMAT.lammps_lmp])
+    perturb_files, perturbed_structs = do_perturb(args.input, 
+                args.input_format, 
+                args.atom_types, 
+                args.savename, 
+                FORMAT.get_filename_by_format(args.output_format),
+                args.output_format, 
+                args.cell_pert_fraction, 
+                args.atom_pert_distance,
+                args.pert_num,
+                args.cartesian is False, 
+                pbc=args.periodicity, 
+                tol=args.tolerance
+                )
+    print("pertub the config done!")
+
+def run_convert_config(cmd_list:list[str]):
+    parser = argparse.ArgumentParser(description='This command is used for transferring structural files between different apps.')
+    parser.add_argument('-i', '--input',         type=str, required=True, help='The input file path')
+    parser.add_argument('-f', '--input_format',  type=str, required=True, help="The input file format, the supported format as 'pwmat/config','vasp/poscar', 'lammps/lmp', 'cp2k/scf'")
+    parser.add_argument('-s', '--savename',      type=str, required=False, help="The output file name, if not provided, the 'atom.config' for pwmat/config, 'POSCAR' for vasp/poscar, 'lammps.lmp' for lammps/lmp will be used", default=None)
+    parser.add_argument('-o', '--output_format', type=str, required=False, help="the output file format, only support the format ['pwmat/config','vasp/poscar', 'lammps/lmp'], if not provided, the input format be used. \nNote: that outputting cp2k/scf format is not supported. In this case, the default will be adjusted to pwmat atom.config", default=None)
+    parser.add_argument('-d', '--cartesian', action='store_true', help="if '-d' is set, the cartesian coordinates will be used, otherwise the fractional coordinates will be used.")
+    parser.add_argument('-t', '--atom_types',    type=str, required=False, nargs='+', help="the atom type list of lammps lmp/dump file, the order is same as lammps dump file", default=None)
+    args = parser.parse_args(cmd_list)
+    FORMAT.check_format(args.input_format, FORMAT.support_config_format)
+    if args.savename is None:
+        args.savename = FORMAT.get_filename_by_format(args.input_format)
+    if args.output_format is None:
+        if args.input_format == FORMAT.cp2k_scf:
+            args.output_format = FORMAT.pwmat_config
+            args.savename = FORMAT.pwmat_config_name
+            print("Warning: The input format is 'cp2k/scf', the output automatically adjust to to atom.config with format pwmat/config\n")
+        args.output_format = args.input_format
+    else:
+        FORMAT.check_format(args.output_format, [FORMAT.pwmat_config, FORMAT.vasp_poscar, FORMAT.lammps_lmp])
+
+    do_convert_config(args.input, args.input_format, args.atom_types, args.savename, args.output_format, args.cartesian is False)
+    print("scaled the config done!")
+
+def run_convert_images(cmd_list:list[str]):
+    merge_info = "This command is used for transferring structural files between different apps.\n" 
+    merge_info += "for 'extxyz' format, all configs will save to one file, \nfor 'pwmlff/npy', configs with same atom types and atom nums in each type will save to one dir.\n"
+    parser = argparse.ArgumentParser(description=merge_info)
+
+    parser.add_argument('-i', '--input',         type=str, required=True, nargs='+', help='The directory or file path of the datas.')
+    parser.add_argument('-f', '--input_format',  type=str, required=True, help="The input file format, the supported format as {}".format(FORMAT.support_images_format))
+    parser.add_argument('-s', '--savepath',      type=str, required=False, help="The output dir path, if not provided, the current dir will be used", default="./")
+    parser.add_argument('-o', '--output_format', type=str, required=False, help="the output file format, only support the format ['pwmat/config','vasp/poscar', 'lammps/lmp'], if not provided, the input format be used. \nNote: that outputting cp2k/scf format is not supported. In this case, the default will be adjusted to pwmat atom.config", default=None)
+    parser.add_argument('-r', '--train_valid_ratio', help='specify stored directory, default=0.8', type=float, default=0.8)
+    parser.add_argument('-u', '--data_shuffle', help='Specify whether to do data shuffle operation, -u is True', action='store_true')
+    parser.add_argument('-g', '--gap', help='Take a config every gap steps from the middle of the trajectory, default is 1', type=int, default=1)
+    # parser.add_argument('-m', '--merge', help="", action='store_true')
+    parser.add_argument('-t', '--atom_types',    type=str, required=False, nargs='+', help="the atom type list of lammps lmp/dump file, the order is same as lammps dump file", default=None)
+    args = parser.parse_args(cmd_list)
+    FORMAT.check_format(args.input_format, FORMAT.support_images_format)
+    FORMAT.check_format(args.output_format, [FORMAT.pwmlff_npy, FORMAT.extxyz])
+    do_convert_images(args.input, args.input_format, args.savepath, args.output_format, args.train_valid_ratio, args.data_shuffle, args.gap, args.atom_types)
 
 if __name__ == "__main__":
-    # import argparse
-    # SUPERCELL_MATRIX = [[2, 0, 0], [0, 2, 0], [0, 0, 2]]
-    # data_file = "/data/home/hfhuang/2_MLFF/2-DP/19-json-version/8-Si2/atom.config"
-    # # data_file = "/data/home/hfhuang/9_cp2k/1-SiO2/cp2k.out"
-    # # data_file = "/data/home/hfhuang/software/mlff/Si/Si64-vasprun.xml"
-    # # data_file = "/data/home/hfhuang/2_MLFF/3-outcar2movement/0/OUTCARC3N4"
-    # output_path = "/data/home/hfhuang/2_MLFF/2-DP/19-json-version/8-Si2/mlff/"
-    # output_file = "supercell.config"
-    # format = "config"
-    # pbc = [1, 1, 1]
-    # # config = Config.read(format, data_file, atom_names=["Si"], index=-1)   # read dump
-    # config = Config.read(format, data_file)   
-    # Config.to(file_path = output_path,
-    #                  file_name = output_file,
-    #                  file_format = 'config',
-    #                  direct = True,
-    #                  sort = False)
-    # parser = argparse.ArgumentParser(description='Convert and build structures.')
-    # parser.add_argument('--format', type=str, required=False, help='Format of the input file', default="outcar")
-    # parser.add_argument('--save_format', type=str, required=False, help='Format of the output file', default="config")
-    # parser.add_argument('--outcar_file', type=str, required=False, help='Path to the OUTCAR file')
-    # parser.add_argument('--movement_file', type=str, required=False, help='Path to the MOVEMENT file')
-    # parser.add_argument('--output_path', type=str, required=False, help='Path to the output directory', default="./")
-    # parser.add_argument('--output_file', type=str, required=False, help='Name of the output file', default="MOVEMENT")
-    # parser.add_argument('--supercell_matrix', type=list, required=False, help='Supercell matrix', default=[[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-    # parser.add_argument('--pbc', type=list, required=False, help='Periodic boundary conditions flags', default=[1, 1, 1])
-    # parser.add_argument('--direct', type=bool, required=False, help='Whether to write the positions in direct (frac) coordinates', default=True)
-    # parser.add_argument('--sort', type=bool, required=False, help='Whether to sort the atoms by atomic number', default=True)
-    # parser.add_argument('--pert_num', type=int, required=False, help='Number of perturbed structures', default=50)
-    # parser.add_argument('--cell_pert_fraction', type=float, required=False, help='Fraction of the cell perturbation', default=0.03)
-    # parser.add_argument('--atom_pert_distance', type=float, required=False, help='Distance of the atom perturbation', default=0.01)
-    # parser.add_argument('--retain_raw', type=bool, required=False, help='Whether to retain raw data', default=False)
-    # parser.add_argument('--train_ratio', type=float, required=False, help='Ratio of training data', default=0.8)
-    # parser.add_argument('--random', type=bool, required=False, help='Whether to shuffle the data', default=True)
-    # parser.add_argument('--scale_factor', type=float, required=False, help='Scale factor of the lattice', default=1.0)
-    # parser.add_argument('--seed', type=int, required=False, help='Random seed', default=2024)
-    # parser.add_argument('--index', type=Union[int, slice, str], required=False, help='Index of the configuration', default=-1)
-    # parser.add_argument('--atom_names', type=list, required=False, help='Names of the atoms', default=["H"])
-    # parser.add_argument('--style', type=str, required=False, help='Style of the lammps input file', default="atomic")
-    
-    # args = parser.parse_args()
-    
-    run_cmd()
-
-    # config = Config.read("vasp/outcar", 
-    #     "/data/home/wuxingxing/datas/al_dir/si_4_vasp/init_bulk/temp_init_bulk_work/aimd/init_config_0/0.9_scale/3_aimd/OUTCAR")
-    # print()
+    run_cmd(sys.argv)
     

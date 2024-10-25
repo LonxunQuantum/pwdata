@@ -34,4 +34,4 @@ def save_to_movement(image_data_all: list, output_path: str, data_name: str):
                                 % (image_data.atom_types_image[j], -image_data.force[j][0], -image_data.force[j][1], -image_data.force[j][2]))
         data_name.write(" -------------------------------------\n")
     data_name.close()
-    print("Convert to %s successfully!" % data_name)
+    # print("Convert to %s successfully!" % data_name)

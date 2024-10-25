@@ -7,6 +7,7 @@ __pycache__/
 pwdata/__pycache__/
 setup.py
 pwdata/test.py
-test.py
 tmp.py
+examples/test_workdir*
+
 #

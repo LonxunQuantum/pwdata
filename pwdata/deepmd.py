@@ -31,9 +31,9 @@ class DPNPY(object):
         with open(type_raw, 'r') as f:
             type = f.read().splitlines()
         atom_nums = len(type)
-        atom_types_image = [_atom_type[int(atom)] for atom in type]
+        atom_types_image = np.array([_atom_type[int(atom)] for atom in type])
         sc = Counter(atom_types_image)
-        atom_type = list(sc.keys())
+        atom_type = np.array(list(sc.keys()))
         atom_type_num = list(sc.values())
         # atom_type_num = [atom_types_image.count(atom) for atom in set(atom_types_image)]
 
@@ -42,7 +42,7 @@ class DPNPY(object):
         for i in range(image_nums):
             virial_image = virial[i] if virial is not None else None
             image = Image(lattice=box[i], position=coord[i], force=force[i], Ep=energy[i], virial=virial_image,
-                          atom_type=atom_type, atom_nums=atom_nums, atom_types_image=atom_types_image, atom_type_num=atom_type_num,
+                          atom_type=atom_type, atom_nums=atom_nums, atom_types_image=atom_types_image, atom_type_num=None,
                           cartesian=True, image_nums=i)
             atomic_energy, _, _, _ = np.linalg.lstsq([atom_type_num], np.array([image.Ep]), rcond=1e-3)
             atomic_energy = np.repeat(atomic_energy, atom_type_num)
