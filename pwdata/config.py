@@ -19,6 +19,7 @@ from pwdata.movement_saver import save_to_movement
 from pwdata.extendedxyz import EXTXYZ, save_to_extxyz
 from pwdata.datasets_saver import save_to_dataset, get_pw, save_to_raw, save_to_npy
 from pwdata.build.write_struc import write_config, write_vasp, write_lammps
+from pwdata.meta import META
 
 class Save_Data(object):
     def __init__(self, data_path, datasets_path = "./PWdata", train_data_path = "train", valid_data_path = "valid", 
@@ -188,6 +189,8 @@ class Config(object):
             image = DPRAW(data_path).image_list[index]
         elif format.lower() == 'pwmlff/npy':
             image = PWNPY(data_path).image_list[index]
+        elif format.lower() == 'meta':
+            image = META(data_path, **kwargs).image_list[index]
         else:
             raise Exception("Error! The format of the input file is not supported!")
         return image

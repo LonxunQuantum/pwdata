@@ -20,8 +20,10 @@ class FORMAT:
     deepmd_raw="deepmd/raw"
     extxyz="extxyz"
     extxyz_name="extxyz.xyz"
+    meta = "meta"
+    
     support_config_format = [pwmat_config, vasp_poscar, lammps_lmp, cp2k_scf]
-    support_images_format = [pwmat_movement, vasp_outcar, lammps_dump, cp2k_md, pwmlff_npy, deepmd_npy, deepmd_raw, extxyz]
+    support_images_format = [pwmat_movement, vasp_outcar, lammps_dump, cp2k_md, pwmlff_npy, deepmd_npy, deepmd_raw, extxyz, meta]
 
     @staticmethod
     def get_filename_by_format(input_format:str):

@@ -34,7 +34,7 @@ def convert_config_to(cmd_list:list[str]):
     pass
 if __name__=="__main__":
     cmd_type = sys.argv[2]
-    if cmd_type.lower() == "convert_images":
+    if cmd_type.lower() == "convert_configs":
         convert_images_to(sys.argv[3:])
     if cmd_type.lower() == "convert_config":
         convert_config_to(sys.argv[3:])

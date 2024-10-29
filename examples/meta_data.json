@@ -1,0 +1,43 @@
+{
+    "_notes" : "These open-source data were downloaded from https://huggingface.co/datasets/fairchem/OMAT24",
+    "datapath" : [
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Alexandria/train",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Alexandria/val"
+    ],
+
+    "Omat24_train" : [
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/train/rattled-1000",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/train/rattled-1000-subsampled",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/train/rattled-300",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/train/rattled-300-subsampled",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/train/rattled-500",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/train/rattled-500-subsampled",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/train/rattled-relax",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/train/aimd-from-PBE-1000-npt",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/train/aimd-from-PBE-1000-nvt",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/train/aimd-from-PBE-3000-npt",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/train/aimd-from-PBE-3000-nvt"
+    ],
+        
+    "Omat24_valid" : [
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/valid/rattled-1000",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/valid/rattled-1000-subsampled",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/valid/rattled-300",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/valid/rattled-300-subsampled",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/valid/rattled-500",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/valid/rattled-500-subsampled",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/valid/rattled-relax",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/valid/aimd-from-PBE-1000-npt",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/valid/aimd-from-PBE-1000-nvt",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/valid/aimd-from-PBE-3000-npt",
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Omat24/valid/aimd-from-PBE-3000-nvt"
+    ],
+        
+    "Alexandria_train" : [
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Alexandria/train"
+    ],
+
+    "Alexandria_valid" : [
+        "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Alexandria/val"
+    ]
+}

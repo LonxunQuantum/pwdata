@@ -22,7 +22,7 @@
             "input_format":"vasp/poscar"
         }
     ],
-    "convert_images":[
+    "convert_configs":[
         {
             "input_file":"./pwmlff_data/LiSiC",
             "input_format":"pwmlff/npy"
@@ -63,10 +63,12 @@
             "input_file":["./lmps_data/HfO2/0.lammpstrj", "./lmps_data/HfO2/10.lammpstrj", "./lmps_data/HfO2/20.lammpstrj", "./lmps_data/HfO2/30.lammpstrj"],
             "input_format":"lammps/dump",
             "atom_types": ["Hf", "O"] 
+        },
+        {
+            "input_file":["./meta_data/alex_val/alex_go_aao_001.aselmdb", "./meta_data/alex_val/alex_go_aao_002.aselmdb"],
+            "input_format":"meta",
+            "atom_types": ["Pt", "Ge"]
         }
-    ],
-    "done":[
-        
     ]
 }
 

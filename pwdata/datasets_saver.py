@@ -6,7 +6,7 @@ from collections import defaultdict
 from pwdata.calculators.const import elements
 
 def save_to_dataset(image_data: list, datasets_path = "./PWdata", train_data_path = "train", valid_data_path = "valid",
-                    train_ratio = None, random = True, seed = 2024, retain_raw = False, data_name = None):
+                    train_ratio = None, random = True, seed = 2024, retain_raw = False, data_name = None, write_patthen="w"):
     # if hasattr(image_data[0], 'format') and image_data[0].format == 'extxyz':
     #     image_lists = defaultdict(list)
     #     for image in image_data:

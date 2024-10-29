@@ -5,6 +5,7 @@ from pwdata.calculators.const import elements, ELEMENTTABLE
 from pwdata.image import Image
 from ase.io import read
 from math import ceil
+from collections import Counter
 
 class EXTXYZ(object):
     def __init__(self, xyz_file, index) -> None:
@@ -143,9 +144,11 @@ def read_one_structures_from_lines(lines:list[str]):
     assert len(lattice) == 9, "lattice in extxyz file should has 9 elements"
     image.lattice = np.array(lattice).reshape(-1, 3)
     image.cartesian = True
-    atom_type, atom_type_num = np.unique(atom_types_image, return_counts=True)
-    image.atom_type = atom_type
-    image.atom_type_num = atom_type_num
+
+    element_counts = Counter(atom_types_image)
+    image.atom_type = np.array(list(element_counts.keys()))
+    image.atom_type_num = np.array(list(element_counts.values()))
+
     if "virial" in result_dict.keys():
         virial = [float(i) for i in result_dict["virial"].split()]
         assert len(virial) == 9, "virial in extxyz file should has 9 elements"
