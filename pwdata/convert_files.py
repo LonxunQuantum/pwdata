@@ -1,7 +1,7 @@
 import os
 import sys
 import numpy as np
-from pwdata.config import Config, Save_Data
+from pwdata.config import Config
 from pwdata.build.supercells import make_supercell
 from pwdata.pertub.perturbation import perturb_structure
 from pwdata.pertub.scale import scale_cell

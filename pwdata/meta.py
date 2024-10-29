@@ -2,7 +2,6 @@ import numpy as np
 import os, glob
 from tqdm import tqdm
 from pwdata.image import Image
-from pwdata.fairchem.datasets.ase_datasets import AseDBDataset
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing
 from collections import Counter
@@ -18,6 +17,7 @@ class META(object):
         return self.image_list
     
     def load_files(self, input:list[str], atom_types: list[str] = None, query: str = None, cpu_nums: int=None):
+        from pwdata.fairchem.datasets.ase_datasets import AseDBDataset
         
         def query_fun(row, elements:list[str]=None):
             if elements is None:
@@ -42,6 +42,7 @@ class META(object):
                 self.image_list.append(image)
 
     def load_files_cpus(self, input: list[str], atom_types: list[str] = None, query: str = None, cpu_nums: int = None):
+        from pwdata.fairchem.datasets.ase_datasets import AseDBDataset
         
         def query_fun(row, elements):
             return sorted(set(row.symbols)) == elements
@@ -53,6 +54,8 @@ class META(object):
             filter_with_elements = partial(query_fun, elements=sorted(atom_types))
         if cpu_nums is None:
             cpu_nums = multiprocessing.cpu_count()
+        else:
+            cpu_nums = min(cpu_nums, multiprocessing.cpu_count())
         # 使用多进程并行处理数据库查询
         with ProcessPoolExecutor(max_workers=cpu_nums) as executor:
             futures = []

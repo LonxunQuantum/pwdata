@@ -48,7 +48,11 @@
             "input_format":"extxyz"
         },
         {
-            "input_file":"./deepmd_data/alloy/IrNi_POSCAR/deepmd",
+            "input_file":"./xyz_data",
+            "input_format":"extxyz"
+        },
+        {
+            "input_file":"./deepmd_data",
             "input_format":"deepmd/npy"  
         },
         {
@@ -66,6 +70,16 @@
         },
         {
             "input_file":["./meta_data/alex_val/alex_go_aao_001.aselmdb", "./meta_data/alex_val/alex_go_aao_002.aselmdb"],
+            "input_format":"meta",
+            "atom_types": ["Pt", "Ge"]
+        },
+        {
+            "input_file":"./meta_data/alex_val",
+            "input_format":"meta",
+            "atom_types": ["Pt", "Ge"]
+        },
+        {
+            "input_file":"./meta_data.json",
             "input_format":"meta",
             "atom_types": ["Pt", "Ge"]
         }

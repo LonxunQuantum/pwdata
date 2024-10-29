@@ -1,6 +1,12 @@
 {
     "_notes" : "These open-source data were downloaded from https://huggingface.co/datasets/fairchem/OMAT24",
-    "datapath" : [
+
+    "datapath": [
+        "/data/home/wuxingxing/codespace/pwdata/examples/meta_data/alex_val/alex_go_aao_001.aselmdb",
+        "/data/home/wuxingxing/codespace/pwdata/examples/meta_data/alex_val/alex_go_aao_002.aselmdb"
+    ],
+
+    "_datapath" : [
         "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Alexandria/train",
         "/share/public/PWMLFF_test_data/eqv2-models/datasets/decompress/Alexandria/val"
     ],

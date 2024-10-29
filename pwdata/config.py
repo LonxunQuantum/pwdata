@@ -190,7 +190,7 @@ class Config(object):
         elif format.lower() == 'pwmlff/npy':
             image = PWNPY(data_path).image_list[index]
         elif format.lower() == 'meta':
-            image = META(data_path, **kwargs).image_list[index]
+            image = META(data_path, atom_names, **kwargs).image_list[index]
         else:
             raise Exception("Error! The format of the input file is not supported!")
         return image
