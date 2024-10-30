@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pwdata", 
-    version="0.3.2",
+    version="0.3.6",
     author="LonxunQuantum",
     author_email="lonxun@pwmat.com",
     description="pwdata is a data pre-processing tool for PWMLFF, which can be used to extract features and labels. It also provides convenient interfaces for data conversion between different software.",
@@ -19,6 +19,16 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.9',
+    install_requires=[
+        "ase", 
+        "lmdb", 
+        "numpy", 
+        "orjson", 
+        "PyYAML", 
+        "setuptools", 
+        "tqdm", 
+        "typing_extensions"
+    ],
     entry_points={
         'console_scripts': [
             'pwdata = pwdata.main:main'

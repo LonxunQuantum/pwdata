@@ -20,16 +20,13 @@ from typing import Any, Callable
 
 import ase
 import numpy as np
-from torch import tensor
 from tqdm import tqdm
 
 from pwdata.fairchem.common.registry import registry
-from pwdata.fairchem.datasets._utils import rename_data_object_keys
 from pwdata.fairchem.datasets.base_dataset import BaseDataset
 from pwdata.fairchem.datasets.lmdb_database import LMDBDatabase
 from pwdata.fairchem.datasets.target_metadata_guesser import guess_property_metadata
 from pwdata.fairchem.modules.transforms import DataTransforms
-from pwdata.fairchem.preprocessing.atoms_to_graphs import AtomsToGraphs
 
 
 def apply_one_tags(
@@ -90,7 +87,7 @@ class AseAtomsDataset(BaseDataset, ABC):
 
         # Make sure we always include PBC info in the resulting atoms objects
         a2g_args["r_pbc"] = True
-        self.a2g = AtomsToGraphs(**a2g_args)
+        self.a2g = None
 
         self.key_mapping = self.config.get("key_mapping", None)
         self.transforms = DataTransforms(self.config.get("transforms", {}))
@@ -124,7 +121,7 @@ class AseAtomsDataset(BaseDataset, ABC):
             )
 
         sid = atoms.info.get("sid", self.ids[idx])
-        fid = atoms.info.get("fid", tensor([0]))
+        fid = atoms.info.get("fid", 0)
 
         # Convert to data object
         data_object = self.a2g.convert(atoms, sid)
@@ -134,9 +131,6 @@ class AseAtomsDataset(BaseDataset, ABC):
         # apply linear reference
         if self.a2g.r_energy is True and self.lin_ref is not None:
             data_object.energy -= sum(self.lin_ref[data_object.atomic_numbers.long()])
-
-        if self.key_mapping is not None:
-            data_object = rename_data_object_keys(data_object, self.key_mapping)
 
         # Transform data object
         data_object = self.transforms(data_object)

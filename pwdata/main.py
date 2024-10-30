@@ -24,6 +24,7 @@ from pwdata.build.write_struc import write_config, write_vasp, write_lammps
 import argparse
 from pwdata.convert_files import do_scale_cell, do_super_cell, do_perturb, do_convert_config, do_convert_images, do_meta_data
 from pwdata.utils.constant import FORMAT, get_atomic_name_from_number
+from pwdata.check_envs import print_cmd
 
 # from pwdata.open_data.meta_data import get_meta_data
 
@@ -294,7 +295,24 @@ pwdata convert -i dirs -f extxyz -s dir
 def main(cmd_list:list=None):
     if cmd_list is None:
         cmd_list = sys.argv
-    from check_envs import print_cmd
+    if len(cmd_list) == 2 and '.json' in cmd_list[1].lower():
+        json_dict = json.load(open(cmd_list[1]))
+        format = json_dict['format']
+        raw_files = json_dict['raw_files']
+        if not isinstance(raw_files, list):
+            raw_files = [raw_files]
+        train_valid_ratio = json_dict['train_valid_ratio'] if 'train_valid_ratio' in json_dict.keys() else 1.0
+        shuffle =  json_dict['valid_shuffle'] if 'valid_shuffle' in json_dict.keys() else False
+        save_dir = json_dict['trainSetDir'] if 'trainSetDir' in json_dict.keys() else 'PWdata'
+        cmd_list = ['pwdata', 'convert_configs']
+        cmd_list.append('-i')
+        cmd_list.extend(raw_files)
+        cmd_list.extend(['-f', format])
+        cmd_list.extend(['-s', save_dir])
+        cmd_list.extend(['-o', 'pwmlff/npy'])
+        cmd_list.extend(['-p', '{}'.format(train_valid_ratio)])
+        if shuffle:
+            cmd_list.append('-r')
     if len(cmd_list) == 1 or "-h".upper() == cmd_list[1].upper() or \
         "help".upper() == cmd_list[1].upper() or "-help".upper() == cmd_list[1].upper() or "--help".upper() == cmd_list[1].upper():
         print_cmd()
@@ -319,7 +337,7 @@ def run_scale_cell(cmd_list:list[str]):
     parser.add_argument('-f', '--input_format',  type=str, required=True, help="The input file format, the supported format as ['pwmat/config','vasp/poscar', 'lammps/lmp', 'cp2k/scf']")
     parser.add_argument('-s', '--savename',      type=str, required=False, help="The output file name, and the input scale factor parameter will be used as a prefix, such as '0.99_atom.config'. If not provided, the 'atom.config' for pwmat/config, 'POSCAR' for vasp/poscar, 'lammps.lmp' for lammps/lmp will be used. ", default=None)
     parser.add_argument('-o', '--output_format', type=str, required=False, help="the output file format, only support the format ['pwmat/config','vasp/poscar', 'lammps/lmp']. If not provided, the input format be used. Note: that outputting 'cp2k/scf' format is not supported, the output format will be adjusted to 'pwmat/config' with the output file name 'atom.config'", default=None)
-    parser.add_argument('-c', '--cartesian', action='store_true', help="if '-c' is set, the cartesian coordinates will be used, otherwise the fractional coordinates will be used. Note: 'pwmat/config' only support the fractional!")
+    parser.add_argument('-c', '--cartesian', action='store_true', help="if '-c' is set, the cartesian coordinates will be used, otherwise the fractional coordinates will be used. Note: 'pwmlff/npy' only support the fractional, 'extxyz' only support the cartesian!")
     parser.add_argument('-t', '--atom_types',    type=str, required=False, nargs='+', help="the atom type list of 'lammps/lmp' or 'lammps/dump' input file, the order is same as input file", default=None)
     args = parser.parse_args(cmd_list)
     FORMAT.check_format(args.input_format, FORMAT.support_config_format)

@@ -23,36 +23,11 @@ Various decorators for registry different kind of classes with unique keys
 
 from __future__ import annotations
 
-import importlib
+# import importlib
 from typing import Any, Callable, ClassVar, TypeVar, Union
 
 R = TypeVar("R")
 NestedDict = dict[str, Union[str, Callable[..., Any], "NestedDict"]]
-
-
-def _get_absolute_mapping(name: str):
-    # in this case, the `name` should be the fully qualified name of the class
-    # e.g., `fairchem.core.tasks.base_task.BaseTask`
-    # we can use importlib to get the module (e.g., `fairchem.core.tasks.base_task`)
-    # and then import the class (e.g., `BaseTask`)
-
-    module_name = ".".join(name.split(".")[:-1])
-    class_name = name.split(".")[-1]
-
-    try:
-        module = importlib.import_module(module_name)
-    except (ModuleNotFoundError, ValueError) as e:
-        raise RuntimeError(
-            f"Could not import module `{module_name}` for import `{name}`"
-        ) from e
-
-    try:
-        return getattr(module, class_name)
-    except AttributeError as e:
-        raise RuntimeError(
-            f"Could not import class `{class_name}` from module `{module_name}`"
-        ) from e
-
 
 class Registry:
     r"""Class for registry object which acts as central source of truth."""
@@ -243,7 +218,7 @@ class Registry:
             raise cls.__import_error(name, mapping_name)
 
         try:
-            return _get_absolute_mapping(name)
+            return None
         except RuntimeError as e:
             raise cls.__import_error(name, mapping_name) from e
 

@@ -24,6 +24,10 @@
     ],
     "convert_configs":[
         {
+            "input_file":["./xyz_data/PbPt.xyz", "./xyz_data/gap_c.xyz", "./xyz_data/metal_1.xyz"],
+            "input_format":"extxyz"
+        },
+        {
             "input_file":"./pwmlff_data/LiSiC",
             "input_format":"pwmlff/npy"
         },
@@ -42,10 +46,6 @@
         {
             "input_file":"./vasp_data/Si_OUTCAR",
             "input_format":"vasp/outcar"  
-        },
-        {
-            "input_file":["./xyz_data/PbPt.xyz", "./xyz_data/gap_c.xyz", "./xyz_data/metal_1.xyz"],
-            "input_format":"extxyz"
         },
         {
             "input_file":"./xyz_data",
@@ -80,6 +80,47 @@
         },
         {
             "input_file":"./meta_data.json",
+            "input_format":"meta",
+            "atom_types": ["Pt", "Ge"]
+        }
+    ],
+    "call_convert_configs":[
+        {
+            "input_file":"./xyz_data/PbPt.xyz",
+            "input_format":"extxyz"
+        },
+        {
+            "input_file":"./pwmlff_data/LiSiC/Si217",
+            "input_format":"pwmlff/npy"
+        },
+        {
+          "input_file":"./pwmat_data/50_LiGePS_movement",
+          "input_format":"pwmat/movement"  
+        },
+        {
+            "input_file":"./pwmat_data/50_LiGePS_movement",
+            "input_format":"pwmat/movement"              
+        },
+        {
+            "input_file":"./vasp_data/Si_OUTCAR",
+            "input_format":"vasp/outcar"  
+        },
+
+        {
+            "input_file":"./deepmd_data/alloy/IrNi_POSCAR/deepmd",
+            "input_format":"deepmd/npy"  
+        },
+        {
+            "input_file":"./cp2k_data/dft.log",
+            "input_format":"cp2k/md"
+        },
+        {
+            "input_file":"./lmps_data/HfO2/0.lammpstrj",
+            "input_format":"lammps/dump",
+            "atom_types": ["Hf", "O"] 
+        },
+        {
+            "input_file":["./meta_data/alex_val/alex_go_aao_001.aselmdb", "./meta_data/alex_val/alex_go_aao_002.aselmdb"],
             "input_format":"meta",
             "atom_types": ["Pt", "Ge"]
         }

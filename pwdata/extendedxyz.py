@@ -134,7 +134,7 @@ def read_one_structures_from_lines(lines:list[str]):
     pattern = r'(\w+)=("[^"]*"|\S+)'
     matches = re.findall(pattern, lines[0])
     result_dict = {key.lower(): value.strip('"') for key, value in matches}
-    image.Ep = np.array([float(result_dict["energy"])])
+    image.Ep = float(result_dict["energy"])
     properties = result_dict["properties"].split(":")
     atom_types_image, postion, force = read_properties_data(image.atom_nums, properties, lines[1:])
     image.force = force

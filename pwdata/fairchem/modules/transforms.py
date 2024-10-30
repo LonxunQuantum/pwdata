@@ -1,15 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-import torch
-
-from pwdata.fairchem.common.utils import cg_change_mat, irreps_sum
-
-if TYPE_CHECKING:
-    from torch_geometric.data import Data
-from contextlib import suppress
-
 # with suppress(ImportError):
 #     # TODO remove this in favor of a better solution
 #     # We should never be importing * from a module
@@ -36,7 +26,7 @@ class DataTransforms:
         return data_object
 
 
-def decompose_tensor(data_object, config) -> Data:
+def decompose_tensor(data_object, config):
     tensor_key = config["tensor"]
     rank = config["rank"]
 
@@ -45,18 +35,4 @@ def decompose_tensor(data_object, config) -> Data:
 
     if rank != 2:
         raise NotImplementedError
-
-    tensor_decomposition = torch.einsum(
-        "ab, cb->ca",
-        cg_change_mat(rank),
-        data_object[tensor_key].reshape(1, irreps_sum(rank)),
-    )
-
-    for decomposition_key in config["decomposition"]:
-        irrep_dim = config["decomposition"][decomposition_key]["irrep_dim"]
-        data_object[decomposition_key] = tensor_decomposition[
-            :,
-            max(0, irreps_sum(irrep_dim - 1)) : irreps_sum(irrep_dim),
-        ]
-
     return data_object

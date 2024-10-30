@@ -5,8 +5,7 @@ from pwdata.config import Config
 from pwdata.build.supercells import make_supercell
 from pwdata.pertub.perturbation import perturb_structure
 from pwdata.pertub.scale import scale_cell
-from pwdata.utils.constant import FORMAT, ELEMENTTABLE
-from pwdata.utils.constant import get_atomic_name_from_number
+from pwdata.utils.constant import FORMAT, ELEMENTTABLE, get_atomic_name_from_number
 from pwdata.image import Image
 from collections import Counter
 from ase.db.row import AtomsRow
@@ -141,11 +140,10 @@ def save_images(savepath, image_data, output_format, train_valid_ratio=1, data_s
                         retain_raw = False,
                         write_patthen="a"
                         )
-    else:
+    elif merge is False and output_format == FORMAT.extxyz:
         save_dict = split_image_by_atomtype_nums(image_data, format=output_format)
         for key, images in save_dict.items():
-            # print(len(images))
-            save_dir = os.path.join(savepath, key) if output_format==FORMAT.extxyz else savepath #pwmlff/npy will do split when saving images
+            save_dir = os.path.join(savepath, key)
             image_data.images = images
             image_data.to(
                         output_path=save_dir,
@@ -156,6 +154,16 @@ def save_images(savepath, image_data, output_format, train_valid_ratio=1, data_s
                         retain_raw = False,
                         write_patthen="a"
                         )
+    else: # for pwmlff/mpy
+        image_data.to(
+                    output_path=savepath,
+                    save_format=output_format,
+                    train_ratio = train_valid_ratio, 
+                    random=data_shuffle,
+                    seed = 2024, 
+                    retain_raw = False,
+                    write_patthen="a"
+                    )
 
 def search_images(input_list:list[str], input_format:str):
     res_list = set()
@@ -212,6 +220,14 @@ def load_files(input_list:list[str], input_format:str, atom_types:list[str]=None
                     image_data.images = [image_data.images]
     return image_data
 
+'''
+description: 
+this function only used for extxyz format
+param {*} image_data
+param {*} format
+return {*}
+author: wuxingxing
+'''
 def split_image_by_atomtype_nums(image_data, format=None):
     key_dict = {}
     for idx, image in enumerate(image_data.images):

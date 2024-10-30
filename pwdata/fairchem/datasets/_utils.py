@@ -9,13 +9,9 @@ from __future__ import annotations
 
 import typing
 
-if typing.TYPE_CHECKING:
-    from torch_geometric.data import Data
-
-
 def rename_data_object_keys(
-    data_object: Data, key_mapping: dict[str, str | list[str]]
-) -> Data:
+    data_object, key_mapping: dict[str, str | list[str]]
+):
     """Rename data object keys
 
     Args:
