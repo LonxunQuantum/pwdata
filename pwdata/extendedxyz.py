@@ -21,7 +21,7 @@ class EXTXYZ(object):
         self.image_list=image_list
 
 def save_to_extxyz(image_data_all: list, output_path: str, train_data_path = "train.xyz", valid_data_path = "valid.xyz",
-                    train_ratio = None, random = True, seed = 2024, retain_raw = False, write_patthen="w"
+                    train_ratio = None, random = True, seed = 2024, retain_raw = False, write_patthen="a"
                     ):
     if not os.path.exists(output_path):
         os.makedirs(output_path)
@@ -114,7 +114,7 @@ def read_structures(
                     frames.append(line)
             image = read_one_structures_from_lines(frames)
             image_list.append(image)
-
+    assert len(image_list) > 0, "extxyz file {} parsing failed".format(file_name)
     return image_list
 
 def read_one_structures_from_lines(lines:list[str]):

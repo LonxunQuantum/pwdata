@@ -1,11 +1,11 @@
 """Adapted from ase: http://wiki.fysik.dtu.dk/ase """
 import numpy as np
 from pwdata.image import Image
-
+from pwdata.config import Config
 class SupercellError(Exception):
     """Use if construction of supercell fails"""
 
-def make_supercell(image_data, supercell_matrix: list, pbc: list = None, wrap=True, tol=1e-5):
+def make_supercell(image_data:Config, supercell_matrix: list, pbc: list = None, wrap=True, tol=1e-5):
     """Construct supercell from image_data and supercell_matrix
 
     Args:
@@ -13,15 +13,15 @@ def make_supercell(image_data, supercell_matrix: list, pbc: list = None, wrap=Tr
         supercell_matrix (list): supercell matrix (3x3)
         pbc (list): Periodic boundary conditions flags.
     """
-    image_data = image_data if isinstance(image_data, Image) else image_data.images
-    prim = image_data
+    image = image_data.images[0]
+    prim = image
     supercell_matrix = np.array(supercell_matrix)
     supercell = clean_matrix(supercell_matrix @ prim.lattice)
     # cartesian lattice points
     lattice_points_frac = lattice_points_in_supercell(supercell_matrix)
     lattice_points = np.dot(lattice_points_frac, supercell)
 
-    superatoms = Image(lattice=supercell, pbc=pbc, atom_type=image_data.atom_type)
+    superatoms = Image(lattice=supercell, pbc=pbc, atom_type=image.atom_type)
     for lp in lattice_points:
         shifted_atoms = prim.copy()
         shifted_atoms.arrays['position'] += lp

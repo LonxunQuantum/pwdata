@@ -1,9 +1,10 @@
 import numpy as np
 from typing import List
 from pwdata.image import Image
+from pwdata.config import Config
 
 def scale_cell(
-    image_data,
+    image: Config,
     scale_factor:float):
     """
     Scale the cell of the system.
@@ -20,8 +21,8 @@ def scale_cell(
     tmp_system : a new Image object
         The scaled system.
     """
-    image_data = image_data if isinstance(image_data, Image) else image_data.images
-    tmp_system = image_data.copy()
+    image = image.images[0]
+    tmp_system = image.copy()
     if tmp_system.cartesian:
         tmp_system.position = tmp_system.get_scaled_positions(wrap=False)   # for cartesian coordinates, we need to convert it to fractional coordinates
         tmp_system.cartesian = False                                        # set cartesian to False, this is important, otherwise, the scaled cell will be scaled again while saving (also in the write_struc.py)

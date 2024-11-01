@@ -1,7 +1,7 @@
 import numpy as np
 from typing import List
 from pwdata.image import Image
-
+from pwdata.config import Config
 class PerturbedStructures:
     def __init__(self):
         self.structures = []
@@ -20,7 +20,7 @@ class PerturbedStructures:
             structure.to(output_path, data_name=data_name+"_{0}".format(i), save_format=save_format, direct=direct, sort=sort, wrap=wrap)
 
 def perturb_structure(
-    image_data,
+    image_data:Config,
     pert_num:int,
     cell_pert_fraction:float,
     atom_pert_distance:float):
@@ -49,11 +49,11 @@ def perturb_structure(
     perturbed_system : A list of new Image objects. Each Image object contains the information of a perturbed configuration.
         The perturbed structs. It contains `pert_num` * frame_num of the input system frames.
     """
-    image_data = image_data if isinstance(image_data, Image) else image_data.images
+    image = image_data.images[0]
     # perturbed_structs = []
     perturbed_structs = PerturbedStructures()
     for _ in range(pert_num):
-        tmp_system = image_data.copy()
+        tmp_system = image.copy()
         cell_perturb_matrix = get_cell_perturb_matrix(cell_pert_fraction)
         tmp_system.lattice = np.matmul(tmp_system.lattice, cell_perturb_matrix)
         tmp_system.position = np.matmul(tmp_system.arrays['position'], cell_perturb_matrix)

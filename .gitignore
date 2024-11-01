@@ -9,5 +9,5 @@ setup.py
 pwdata/test.py
 tmp.py
 examples/test_workdir*
-
+get_Omat24_datasets.py
 #

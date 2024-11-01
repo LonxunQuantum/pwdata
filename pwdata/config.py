@@ -20,6 +20,7 @@ from pwdata.extendedxyz import EXTXYZ, save_to_extxyz
 from pwdata.datasets_saver import save_to_dataset, get_pw, save_to_raw, save_to_npy
 from pwdata.build.write_struc import write_config, write_vasp, write_lammps
 from pwdata.meta import META
+from pwdata.utils.constant import FORMAT
 
 class Save_Data(object):
     def __init__(self, data_path, datasets_path = "./PWdata", train_data_path = "train", valid_data_path = "valid", 
@@ -115,7 +116,7 @@ class Save_Data(object):
                 
                 
 class Config(object):
-    def __init__(self, format: str, data_path: str, pbc = None, atom_names = None, index = ':', **kwargs):
+    def __init__(self, format: str = None, data_path: str = None, pbc = None, atom_names = None, index = ':', **kwargs):
         self.format = format
         self.data_path = data_path
         self.pbc = pbc
@@ -125,7 +126,9 @@ class Config(object):
         self.images = self._read()
 
     def _read(self):
-        return Config.read(self.format, self.data_path, self.pbc, self.atom_names, self.index, **self.kwargs)
+        images, format = Config.read(self.format, self.data_path, self.pbc, self.atom_names, self.index, **self.kwargs)
+        self.format = format # if the input format is None
+        return images
     
     def append(self, images_obj):
         if not hasattr(self, 'images'):
@@ -137,7 +140,7 @@ class Config(object):
         self.images += images_obj.images
         
     @staticmethod
-    def read(format: str, data_path: str, pbc = None, atom_names = None, index = ':', **kwargs):
+    def read(format: str = None, data_path: str = None, pbc = None, atom_names = None, index = ':', **kwargs):
         """ Read the data from the input file. 
             index: int, slice or str
             The last configuration will be returned by default.  Examples:
@@ -161,39 +164,42 @@ class Config(object):
                 index = string2index(index)
             except ValueError:
                 pass
-
-        if format.lower() == "pwmat/config":
-            image = CONFIG(data_path, pbc).image_list[0]
-        elif format.lower() == "vasp/poscar":
-            image = POSCAR(data_path, pbc).image_list[0]
-        elif format.lower() == "lammps/dump":
-            assert atom_names is not None, "atom_names must be set when format is dump"
-            image = DUMP(data_path, atom_names).image_list[index]
-        elif format.lower() == "lammps/lmp":
-            image = LMP(data_path, atom_names, **kwargs).image_list[0]
-        elif format.lower() == "pwmat/movement":
-            image = MOVEMENT(data_path).image_list[index]
-        elif format.lower() == "vasp/outcar":
-            image = OUTCAR(data_path).image_list[index]
-        elif format.lower() == "extxyz":
-            image = EXTXYZ(data_path, index).image_list[index]
-        elif format.lower() == "vasp/xml":
-            image = None
-        elif format.lower() == 'cp2k/md':
-            image = CP2KMD(data_path).image_list[index]
-        elif format.lower() == 'cp2k/scf':
-            image = CP2KSCF(data_path).image_list[0]
-        elif format.lower() == 'deepmd/npy':
-            image = DPNPY(data_path).image_list[index]
-        elif format.lower() == 'deepmd/raw':
-            image = DPRAW(data_path).image_list[index]
-        elif format.lower() == 'pwmlff/npy':
-            image = PWNPY(data_path).image_list[index]
-        elif format.lower() == 'meta':
-            image = META(data_path, atom_names, **kwargs).image_list[index]
+        if format is None:
+            image, format = infer_format(data_path, pbc, atom_names, index, **kwargs)
+            print("infer the input data format is {}".format(format))
         else:
-            raise Exception("Error! The format of the input file is not supported!")
-        return image
+            if format.lower() == "pwmat/config":
+                image = CONFIG(data_path, pbc).image_list
+            elif format.lower() == "vasp/poscar":
+                image = POSCAR(data_path, pbc).image_list
+            elif format.lower() == "lammps/dump":
+                assert atom_names is not None, "atom_names must be set when format is dump"
+                image = DUMP(data_path, atom_names).image_list[index]
+            elif format.lower() == "lammps/lmp":
+                image = LMP(data_path, atom_names, **kwargs).image_list
+            elif format.lower() == "pwmat/movement":
+                image = MOVEMENT(data_path).image_list[index]
+            elif format.lower() == "vasp/outcar":
+                image = OUTCAR(data_path).image_list[index]
+            elif format.lower() == "extxyz":
+                image = EXTXYZ(data_path, index).image_list[index]
+            elif format.lower() == "vasp/xml":
+                image = None
+            elif format.lower() == 'cp2k/md':
+                image = CP2KMD(data_path).image_list[index]
+            elif format.lower() == 'cp2k/scf':
+                image = CP2KSCF(data_path).image_list
+            elif format.lower() == 'deepmd/npy':
+                image = DPNPY(data_path).image_list[index]
+            elif format.lower() == 'deepmd/raw':
+                image = DPRAW(data_path).image_list[index]
+            elif format.lower() == 'pwmlff/npy':
+                image = PWNPY(data_path).image_list[index]
+            elif format.lower() == 'meta':
+                image = META(data_path, atom_names, **kwargs).image_list[index]
+            else:
+                raise Exception("Error! The format of the input file is not supported!")
+        return image, format.lower()
     
     def to(self, output_path, save_format = None, **kwargs):
         """
@@ -230,12 +236,10 @@ class Config(object):
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
-        images = self if isinstance(self, Image) else self.images
-            
-        if isinstance(images, list):
-            self.multi_to(images, output_path, save_format, **kwargs)
+        if save_format in FORMAT.support_config_format:
+            self.write_image(self.images[0], output_path, save_format, **kwargs)
         else:
-            self.write_image(images, output_path, save_format, **kwargs)
+            self.multi_to(self.images, output_path, save_format, **kwargs)
         
     def multi_to(self, images, output_path, save_format, **kwargs):
         """
@@ -281,3 +285,72 @@ def string2index(string: str) -> Union[int, slice, str]:
             i.append(int(s))
     i += (3 - len(i)) * [None]
     return slice(*i)
+
+def infer_format(data_path: str, pbc = None, atom_names = None, index = ':', **kwargs):  
+    try:
+        image = MOVEMENT(data_path).image_list[index]
+        return image, FORMAT.pwmat_movement
+    except Exception as e:
+        pass
+    try:
+        image = OUTCAR(data_path).image_list[index]
+        return image, FORMAT.vasp_outcar
+    except Exception as e:
+        pass    
+    try:
+        image = EXTXYZ(data_path, index).image_list[index]
+        return image, FORMAT.extxyz
+    except Exception as e:
+        pass
+    try:
+        image = CP2KMD(data_path).image_list[index]
+        return image, FORMAT.cp2k_md
+    except Exception as e:
+        pass
+    try:
+        image = DPNPY(data_path).image_list[index]
+        return image, FORMAT.deepmd_npy
+    except Exception as e:
+        pass    
+    try:
+        image = DPRAW(data_path).image_list[index]
+        return image, FORMAT.deepmd_raw
+    except Exception as e:
+        pass    
+    try:
+        image = PWNPY(data_path).image_list[index]
+        return image, FORMAT.pwmlff_npy
+    except Exception as e:
+        pass    
+    try:
+        image = META(data_path, atom_names, **kwargs).image_list[index]
+        return image, FORMAT.meta
+    except Exception as e:
+        pass
+    try:
+        image = DUMP(data_path, atom_names).image_list[index]
+        return image, FORMAT.lammps_dump
+    except Exception as e:
+        pass
+    try:
+        image = CONFIG(data_path, pbc).image_list #
+        return image, FORMAT.pwmat_config
+    except Exception as e:
+        pass  
+    try:
+        image = POSCAR(data_path, pbc).image_list
+        return image, FORMAT.vasp_poscar
+    except Exception as e:
+        pass
+    try:
+        image = CP2KSCF(data_path).image_list
+        return image, FORMAT.cp2k_scf
+    except Exception as e:
+        pass
+    try:
+        image = LMP(data_path, atom_names, **kwargs).image_list
+        return image, FORMAT.lammps_lmp
+    except Exception as e:
+        pass
+    error_info = "ERROR! Speculation on input data format failed, please explicitly specify the input format. For lammps/dump files, please also specify the element type."
+    raise Exception(error_info)

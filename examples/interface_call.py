@@ -171,5 +171,5 @@ class FORMAT:
                 raise Exception("the input format is not supported, please check the input format {}, the supported format as:\n{}".format(input_format, support_format))
 
 if __name__=="__main__":
-    # test_convert_config()
+    test_convert_config()
     test_convert_configs()

@@ -24,16 +24,12 @@
     ],
     "convert_configs":[
         {
-            "input_file":["./xyz_data/PbPt.xyz", "./xyz_data/gap_c.xyz", "./xyz_data/metal_1.xyz"],
-            "input_format":"extxyz"
+            "input_file":"./deepmd_data",
+            "input_format":"deepmd/npy"  
         },
         {
-            "input_file":"./pwmlff_data/LiSiC",
-            "input_format":"pwmlff/npy"
-        },
-        {
-            "input_file":["./pwmlff_data/LiSiC/Si217", "./pwmlff_data/LiSiC/C2", "./pwmlff_data/LiSiC/Si1", "./pwmlff_data/LiSiC/C64Si32", "./pwmlff_data/LiSiC/Li1Si24", "./pwmlff_data/LiSiC/C64Si32"],
-            "input_format":"pwmlff/npy"
+            "input_file":"./vasp_data/Si_OUTCAR",
+            "input_format":"vasp/outcar"  
         },
         {
           "input_file":"./pwmat_data/50_LiGePS_movement",
@@ -44,16 +40,8 @@
             "input_format":"pwmat/movement"              
         },
         {
-            "input_file":"./vasp_data/Si_OUTCAR",
-            "input_format":"vasp/outcar"  
-        },
-        {
             "input_file":"./xyz_data",
             "input_format":"extxyz"
-        },
-        {
-            "input_file":"./deepmd_data",
-            "input_format":"deepmd/npy"  
         },
         {
             "input_file":["./deepmd_data/alloy/IrNi_POSCAR/deepmd", "./deepmd_data/alloy/IrPdNi_POSCAR/deepmd", "./deepmd_data/alloy/RhIrPdNi_POSCAR/deepmd"],
@@ -82,6 +70,18 @@
             "input_file":"./meta_data.json",
             "input_format":"meta",
             "atom_types": ["Pt", "Ge"]
+        },
+        {
+            "input_file":["./xyz_data/PbPt.xyz", "./xyz_data/gap_c.xyz", "./xyz_data/metal_1.xyz"],
+            "input_format":"extxyz"
+        },
+        {
+            "input_file":"./pwmlff_data/LiSiC",
+            "input_format":"pwmlff/npy"
+        },
+        {
+            "input_file":["./pwmlff_data/LiSiC/Si217", "./pwmlff_data/LiSiC/C2", "./pwmlff_data/LiSiC/Si1", "./pwmlff_data/LiSiC/C64Si32", "./pwmlff_data/LiSiC/Li1Si24", "./pwmlff_data/LiSiC/C64Si32"],
+            "input_format":"pwmlff/npy"
         }
     ],
     "call_convert_configs":[
