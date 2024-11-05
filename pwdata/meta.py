@@ -158,9 +158,9 @@ def to_image(Atoms):
     image.Ep = Atoms.energy
 
     # 计算 Atomic-Energy
-    atomic_energy, _, _, _ = np.linalg.lstsq([image.atom_type_num], np.array([image.Ep]), rcond=1e-3)
-    atomic_energy = np.repeat(atomic_energy, image.atom_type_num)
-    image.atomic_energy = atomic_energy.tolist()
+    # atomic_energy, _, _, _ = np.linalg.lstsq([image.atom_type_num], np.array([image.Ep]), rcond=1e-3)
+    # atomic_energy = np.repeat(atomic_energy, image.atom_type_num)
+    # image.atomic_energy = atomic_energy.tolist()
 
     vol = Atoms.volume
     virial = (-np.array(Atoms.stress) * vol)

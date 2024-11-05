@@ -460,7 +460,7 @@ def run_convert_configs(cmd_list:list[str]):
     parser.add_argument('-m', '--merge', type=int, required=False, default=1, help="if '-m 1' the output config files will save into one xyzfile. Otherwise, the out configs will be saved separately according to the structural element types. The default value is 1")
     parser.add_argument('-g', '--gap', help='Take a config every gap steps from the middle of the trajectory, default is 1', type=int, default=1)
     parser.add_argument('-q', '--query', type=str, required=False, help='For meta data, advanced query statement, filter Mata data based on query criteria, detailed usage reference http://doc.lonxun.com/PWMLFF/Appendix-2', default=None)
-    parser.add_argument('-n', '--cpu_nums', type=int, required=False, help='For meta data, parallel reading of meta databases using kernel count, default to using all available cores', default=None)
+    parser.add_argument('-n', '--cpu_nums', type=int, default=1, required=False, help='For meta data, parallel reading of meta databases using kernel count, default to using all available cores')
     parser.add_argument('-t', '--atom_types',    type=str, required=False, nargs='+', help="For 'lammps/lmp', 'lammps/dump': the atom type list of lammps lmp/dump file, the order is same as lammps dump file.\nFor meta data: Query structures that only exist for that element type", default=None)
     
     args = parser.parse_args(cmd_list)
