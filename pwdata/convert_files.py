@@ -277,18 +277,25 @@ def load_files(input_dict:dict, input_format:str=None, atom_types:list[str]=None
                     tmp_image_data = Config(input_format, metapaths, atom_names=atom_types, query=query, cpu_nums=cpu_nums)
                     image_data.images.extend(tmp_image_data.images)
                 print("There are a total of {} aselmdb, and the current progress has been loaded {} %".format(lmdb_nums, np.round(idx*chunk_size/lmdb_nums, 2)))
-
         else:
             if len(input_dict[FORMAT.traj]) > 0:# the input is traj files
-                for data_path in input_dict[FORMAT.traj]:
-                    image_data = Config(input_format, data_path, atom_names=atom_types, query=query, cpu_nums=cpu_nums)
-                    if not isinstance(image_data.images, list): # for the first pwmlff/npy dir only has one picture
-                        image_data.images = [image_data.images]
+                for data_path in  tqdm(input_dict[FORMAT.traj], total=len(input_dict[FORMAT.traj])):
+                    if image_data is None:
+                        image_data = Config(input_format, data_path, atom_names=atom_types, query=query, cpu_nums=cpu_nums)
+                        if not isinstance(image_data.images, list): # for the first pwmlff/npy dir only has one picture
+                            image_data.images = [image_data.images]
+                    else:
+                        tmp_image_data = Config(input_format, data_path, atom_names=atom_types, query=query, cpu_nums=cpu_nums)
+                        image_data.images.extend(tmp_image_data.images)
             else:
                 for data_path in tqdm(input_dict[input_format], total=len(input_dict[input_format])): 
-                    image_data = Config(input_format, data_path, atom_names=atom_types, query=query, cpu_nums=cpu_nums)
-                    if not isinstance(image_data.images, list): # for the first pwmlff/npy dir only has one picture
-                        image_data.images = [image_data.images]
+                    if image_data is None:
+                        image_data = Config(input_format, data_path, atom_names=atom_types, query=query, cpu_nums=cpu_nums)
+                        if not isinstance(image_data.images, list): # for the first pwmlff/npy dir only has one picture
+                            image_data.images = [image_data.images]
+                    else:
+                        tmp_image_data = Config(input_format, data_path, atom_names=atom_types, query=query, cpu_nums=cpu_nums)
+                        image_data.images.extend(tmp_image_data.images)
         return image_data
 
     else:
@@ -308,7 +315,6 @@ def load_files(input_dict:dict, input_format:str=None, atom_types:list[str]=None
                         tmp_image_data = Config(input_format, metapaths, atom_names=atom_types, query=query, cpu_nums=cpu_nums)
                         image_data.images.extend(tmp_image_data.images)
                     # print("There are a total of {} aselmdb, and the current progress has been loaded {} %".format(lmdb_nums, np.round(idx*chunk_size/lmdb_nums, 2)))
-
             else:
                 for data_path in tqdm(data_list, total=len(data_list)):
                     if image_data is None:

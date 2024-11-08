@@ -297,7 +297,8 @@ def main(cmd_list:list=None):
         cmd_list = sys.argv
     if len(cmd_list) == 2 and '.json' in cmd_list[1].lower():
         json_dict = json.load(open(cmd_list[1]))
-        format = json_dict['format']
+        format = json_dict['format']  if 'format' in json_dict.keys() else None
+        save_format = json_dict['save_format']  if 'save_format' in json_dict.keys() else None
         raw_files = json_dict['raw_files']
         if not isinstance(raw_files, list):
             raw_files = [raw_files]
@@ -307,9 +308,13 @@ def main(cmd_list:list=None):
         cmd_list = ['pwdata', 'convert_configs']
         cmd_list.append('-i')
         cmd_list.extend(raw_files)
-        cmd_list.extend(['-f', format])
+        if format is not None:
+            cmd_list.extend(['-f', format])
         cmd_list.extend(['-s', save_dir])
-        cmd_list.extend(['-o', 'pwmlff/npy'])
+        if save_format is not None:
+            cmd_list.extend(['-o', save_format])
+        else:
+            cmd_list.extend(['-o', 'pwmlff/npy'])
         cmd_list.extend(['-p', '{}'.format(train_valid_ratio)])
         if shuffle:
             cmd_list.append('-r')
