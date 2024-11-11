@@ -5,9 +5,6 @@ build/
 pwdata.egg-info/
 __pycache__/
 pwdata/__pycache__/
-setup.py
-pwdata/test.py
 tmp.py
 examples/test_workdir*
-get_Omat24_datasets.py
 #
