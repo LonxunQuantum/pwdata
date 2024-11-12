@@ -1,3 +1,8 @@
+'''
+description: 
+Convert MPtraj JSON file to aselmdb format
+'''
+
 from pwdata import Config
 from pwdata.utils.constant import FORMAT
 import json
@@ -7,23 +12,6 @@ from ase.db.row import AtomsRow
 from pwdata.utils.constant import get_atomic_number_from_name
 from tqdm import tqdm
 import numpy as np
-
-def trajs2config():
-    atom_types = ["Hf", "O"] # for lammps
-    input_file = "/data/home/wuxingxing/codespace/pwdata/examples/lmps_data/HfO2/30.lammpstrj"
-    input_format="lammps/dump"
-    save_format = "pwmat/config"
-
-    image = Config(data_path=input_file, format=input_format, atom_names=atom_types)
-    tmp_image_data = image.images
-    save_dir = "./tmp_test"
-    for id, config in enumerate(tmp_image_data):
-        savename = "{}_{}".format(id, FORMAT.get_filename_by_format(save_format))
-        image.iamges = [config]
-        image.to(output_path = save_dir,
-            data_name = savename,
-            save_format = save_format,
-            sort = True)
 
 def MPjson2lmdb():
     mp_file = "/data/home/wuxingxing/codespace/pwdata/examples/mp_data/mptest.json"
@@ -81,30 +69,26 @@ def read_from_dict(key:str, config:dict, default=None, require=False):
         else:
             return default
 
-def test_lmdb():
-    from pwdata.fairchem.datasets.ase_datasets import AseDBDataset
+# def test_lmdb():
+#     from pwdata.fairchem.datasets.ase_datasets import AseDBDataset
     # search_dict = {'src': '/data/home/wuxingxing/codespace/pwdata/examples/meta_data/alex_val/alex_go_aao_001.aselmdb'}
     # dataset = AseDBDataset(config=search_dict)
-    # #2 data omat 非平衡态
     # atom_list = list(dataset.dbs[0].select("Li"))
     # std = atom_list[0]
     
     # search_dict = {'src': '/data/home/wuxingxing/codespace/pwdata/examples/MPtrj.aselmdb'}
     # dataset2 = AseDBDataset(config=search_dict)
-    # #2 data omat 非平衡态
     # atom_list2 = list(dataset2.dbs[0].select("Li"))
     # dev = atom_list2[0]
 
-    search_dict = {'src': '/data/home/wuxingxing/codespace/pwdata/examples/mp_data/sub.aselmdb'}
-    dataset3 = AseDBDataset(config=search_dict)
-    #2 data omat 非平衡态
-    atom_list3 = list(dataset3.dbs[0].select())
-    std3 = atom_list3[0]
+    # search_dict = {'src': '/data/home/wuxingxing/codespace/pwdata/examples/mp_data/sub.aselmdb'}
+    # dataset3 = AseDBDataset(config=search_dict)
+    # atom_list3 = list(dataset3.dbs[0].select())
+    # std3 = atom_list3[0]
 
-    print()
+    # print()
 
 if __name__=="__main__":
     MPjson2lmdb()
-    test_lmdb()
 
 	
