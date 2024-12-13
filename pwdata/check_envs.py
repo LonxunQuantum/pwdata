@@ -29,6 +29,10 @@ def cmd_infos():
     info += "\tExtract various trajectory files(movement of PWmat, outcar of Vasp, lammps/dump of Lammps, cp2k-mdfile of CP2K) or data sets (deepmd/npy, deepmd/raw, extxyz, meta aselmdb) into pwmlff/npy or extxyz format, the command example:\n"
     info += "\tpwdata convert_images -i input_file1 input_file2 ... input_filen -f input_file_format -n output_format_name -o output_format\n\n"
 
+    info += "count or count_configs:\n"
+    info += "\tThis command is used to count the number of input structures, the command example:\n"
+    info += "\tpwdata count -i input_file1 input_file2 ... input_filen -f input_file_format\n\n"
+
     info += "format suppport\n"
     info += "__________________________________________________________________________________________|\n"
     info += "| Software          | file             | multi-Image | label | format                     |\n"

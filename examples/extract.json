@@ -3,8 +3,8 @@
     "valid_shuffle": true,
     "train_valid_ratio": 0.9,
     "raw_files": [
-        "/data/home/wuxingxing/codespace/pwdata/examples/pwmat_data/50_LiGePS_movement", 
-        "/data/home/wuxingxing/codespace/pwdata/examples/pwmat_data/lisi_50_movement"
+        "/data/home/wuxingxing/codespace/pwdata_dev/examples/pwmat_data/50_LiGePS_movement", 
+        "/data/home/wuxingxing/codespace/pwdata_dev/examples/pwmat_data/lisi_50_movement"
    ], 
     "format": "pwmat/movement", 
     "trainSetDir": "PWdata",

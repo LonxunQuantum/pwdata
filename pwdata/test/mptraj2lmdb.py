@@ -3,8 +3,6 @@ description:
 Convert MPtraj JSON file to aselmdb format
 '''
 
-from pwdata import Config
-from pwdata.utils.constant import FORMAT
 import json
 from pwdata.fairchem.datasets.ase_datasets import LMDBDatabase
 from ase import Atoms
@@ -25,14 +23,10 @@ def MPjson2lmdb():
     db.close()
     
 def cvt_dict_2_atomrow(config:dict):
-    # read cell
     cell = read_from_dict('matrix', config['structure']['lattice'], require=True)
-    # read position
     atom_type_list = get_atomic_number_from_name([_['label'] for _ in config['structure']['sites']])
     position = [_['xyz'] for _ in config['structure']['sites']]
-    # read magmom
     magmom = read_from_dict('magmom', config, require=True)
-    
     atom = Atoms(positions=position,
                 numbers=atom_type_list,
                 magmoms=magmom,
@@ -43,7 +37,6 @@ def cvt_dict_2_atomrow(config:dict):
     # read stress -> xx, yy, zz, yz, xz, xy
     stress = read_from_dict('stress', config, require=True)
     atom_rows.stress = [stress[0][0],stress[1][1],stress[2][2],stress[1][2],stress[0][2],stress[0][1]]
-    # read force and energy
     force = read_from_dict('force', config, require=True)
     energy = read_from_dict('corrected_total_energy', config, require=True)
     atom_rows.__setattr__('force',  force)
@@ -57,7 +50,6 @@ def cvt_dict_2_atomrow(config:dict):
     data['ef_per_atom_relaxed'] = read_from_dict('ef_per_atom_relaxed', config, default=None)
     data['bandgap'] = read_from_dict('bandgap', config, default=None)
     data['mp_id'] = read_from_dict('mp_id', config, default=None)
-    # atom_rows._data = data
     return atom_rows, data
 
 def read_from_dict(key:str, config:dict, default=None, require=False):

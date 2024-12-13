@@ -96,3 +96,21 @@ pwdata convert_configs -i ./meta_data/alex_val -f meta -s ./test_workdir/12_0_me
 pwdata convert_configs -i ./meta_data/alex_val -f meta -s ./test_workdir/12_1_meta_extxyz -o extxyz -p 1.0 -r -g 1 -m 1 -t Pt Ge
 pwdata convert_configs -i ./meta_data.json -f meta -s ./test_workdir/13_0_meta_PWdata -o pwmlff/npy -p 1.0 -r -g 1 -m 1 -t Pt Ge
 pwdata convert_configs -i ./meta_data.json -f meta -s ./test_workdir/13_1_meta_extxyz -o extxyz -p 1.0 -r -g 1 -m 1 -t Pt Ge
+
+# count
+ pwdata count -i ./deepmd_data
+ pwdata count -i ./vasp_data/Si_OUTCAR
+ pwdata count -i ./pwmat_data/50_LiGePS_movement
+ pwdata count -i ./pwmat_data/50_LiGePS_movement ./pwmat_data/lisi_50_movement
+ pwdata count -i ./xyz_data
+ pwdata count -i ./deepmd_data/alloy/IrNi_POSCAR/deepmd ./deepmd_data/alloy/IrPdNi_POSCAR/deepmd ./deepmd_data/alloy/RhIrPdNi_POSCAR/deepmd
+ pwdata count -i ./cp2k_data/dft.log
+ pwdata count -i ./lmps_data/HfO2/0.lammpstrj ./lmps_data/HfO2/10.lammpstrj ./lmps_data/HfO2/20.lammpstrj ./lmps_data/HfO2/30.lammpstrj -t Hf O
+ pwdata count -i ./meta_data/alex_val/alex_go_aao_001.aselmdb ./meta_data/alex_val/alex_go_aao_002.aselmdb -t Pt Ge
+ pwdata count -i ./meta_data/alex_val -t Pt Ge
+ pwdata count -i ./meta_data.json -t Pt Ge
+ pwdata count -i ./xyz_data/PbPt.xyz ./xyz_data/gap_c.xyz ./xyz_data/metal_1.xyz
+ pwdata count -i ./pwmlff_data/LiSiC
+ pwdata count -i ./pwmlff_data/LiSiC/Si217 ./pwmlff_data/LiSiC/C2 ./pwmlff_data/LiSiC/Si1 ./pwmlff_data/LiSiC/C64Si32 ./pwmlff_data/LiSiC/Li1Si24 ./pwmlff_data/LiSiC/C64Si32
+
+ 

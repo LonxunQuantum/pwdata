@@ -22,7 +22,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # from pwdata.datasets_saver import save_to_dataset, get_pw, save_to_raw, save_to_npy
 # from pwdata.build.write_struc import write_config, write_vasp, write_lammps
 import argparse
-from pwdata.convert_files import do_scale_cell, do_super_cell, do_perturb, do_convert_config, do_convert_images
+from pwdata.convert_files import do_scale_cell, do_super_cell, do_perturb, do_convert_config, do_convert_images, do_count_images
 from pwdata.utils.constant import FORMAT, get_atomic_name_from_number
 from pwdata.check_envs import print_cmd
 
@@ -331,6 +331,21 @@ def main(cmd_list:list=None):
         run_convert_config(cmd_list[2:])
     elif "convert_configs".upper() == cmd_list[1].upper() or "cvt_configs".upper() == cmd_list[1].upper():
         run_convert_configs(cmd_list[2:])
+    elif "count".upper() == cmd_list[1].upper() or "count_configs".upper() == cmd_list[1].upper():
+        if '.json' in cmd_list[2].lower():
+            json_dict = json.load(open(cmd_list[2]))
+            format = json_dict['format']  if 'format' in json_dict.keys() else None
+            input = json_dict['datapath'] if 'datapath' in json_dict.keys() else None
+            if input is None:
+                input = json_dict['raw_files'] if 'raw_files' in json_dict.keys() else None
+            cmd_list = ["-i"]
+            cmd_list.extend(input)
+            if format is not None:
+                cmd_list.extend(['-f', format])
+            count_configs(cmd_list) # pwdata count extract.json
+        else:
+            count_configs(cmd_list[2:]) # pwdata count -i inputs -f pwmat/config
+            
     else:
         print("\n\nERROR! Input cannot be recognized!\n\n\n")
         print_cmd()
@@ -489,6 +504,37 @@ def run_convert_configs(cmd_list:list[str]):
 
     merge = True if args.merge == 1 else False
     do_convert_images(input_list, args.input_format, args.savepath, args.output_format, args.train_valid_ratio, args.split_rand, args.gap, atom_types, args.query, args.cpu_nums, merge)
+
+
+def count_configs(cmd_list:list[str]):
+    parser = argparse.ArgumentParser(description='This command is used to count the number of input structures\n')
+    parser.add_argument('-i', '--input',         type=str, required=True, nargs='+', help="The directory or file path of the datas.\nYou can also use JSON file to list all file paths in 'datapath': [], such as 'pwdata/test/meta_data.json'")
+    parser.add_argument('-f', '--input_format',  type=str, required=False, default=None, help="The input file format,  if not specified, the format will be automatically inferred based on the input files. the supported format as {}".format(FORMAT.support_images_format))
+    parser.add_argument('-q', '--query', type=str, required=False, help='For meta data, advanced query statement, filter Mata data based on query criteria, detailed usage reference http://doc.lonxun.com/PWMLFF/Appendix-2', default=None)
+    parser.add_argument('-n', '--cpu_nums', type=int, default=1, required=False, help='For meta data, parallel reading of meta databases using kernel count, default to using all available cores')
+    parser.add_argument('-t', '--atom_types',    type=str, required=False, nargs='+', help="For 'lammps/lmp', 'lammps/dump': the atom type list of lammps lmp/dump file, the order is same as lammps dump file.\nFor meta data: Query structures that only exist for that element type", default=None)
+    
+    args = parser.parse_args(cmd_list)
+    try:
+        atom_types = get_atomic_name_from_number(args.atom_types)
+    except Exception as e:
+        atom_types = args.atom_types
+    input_list = []
+    for _input in args.input:
+        if os.path.isfile(_input) and "json" in os.path.basename(_input) and os.path.exists(_input):
+                input = json.load(open(_input))['datapath']
+                dicts = json.load(open(_input))
+                input = dicts['datapath'] if 'datapath' in dicts.keys() else None
+                if input is None:
+                    input = dicts['raw_files'] if 'raw_files' in dicts.keys() else None
+                if isinstance(input, str):
+                    input = [input]
+                input_list.extend(input)
+        else:
+            assert os.path.exists(_input)
+            input_list.append(_input)
+
+    do_count_images(input_list, args.input_format, atom_types, args.query, args.cpu_nums)
 
 if __name__ == "__main__":
     main()

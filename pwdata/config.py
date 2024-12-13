@@ -123,7 +123,10 @@ class Config(object):
         self.atom_names = atom_names
         self.index = index
         self.kwargs = kwargs
-        self.images = self._read()
+        if data_path is not None:
+            self.images = self._read()
+        else:
+            self.images = []
 
     def _read(self):
         images, format = Config.read(self.format, self.data_path, self.pbc, self.atom_names, self.index, **self.kwargs)
@@ -199,6 +202,8 @@ class Config(object):
                 image = META(data_path, atom_names, **kwargs).image_list[index]
             else:
                 raise Exception("Error! The format of the input file is not supported!")
+        if not isinstance(image, list):
+            image = [image]
         return image, format.lower()
     
     def to(self, output_path, save_format = None, **kwargs):
@@ -271,6 +276,7 @@ class Config(object):
 
 def string2index(string: str) -> Union[int, slice, str]:
     """Convert index string to either int or slice"""
+    string = string.replace(" ", "")
     if ':' not in string:
         # may contain database accessor
         try:

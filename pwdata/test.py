@@ -123,6 +123,33 @@ def test_convert_configs():
             res_list.append(cmd_list)
     return res_list
 
+
+def test_count_configs():
+    res_list = []
+    configs = json.load(open("./config.json"))["convert_configs"]
+    for idi, config in enumerate(configs):
+        config_file = config["input_file"]
+        if isinstance(config_file, str):
+            config_file = [config_file]
+        
+        for _ in config_file:
+            if not os.path.exists(_):
+                print("{} not exists".format(_))
+        if "atom_types" in config.keys():
+            atom_types = config["atom_types"]
+        else:
+            atom_types = None
+        for idj, format in enumerate([FORMAT.pwmlff_npy, FORMAT.extxyz]):
+            cmd_list = ["", "count"]
+            cmd_list.append("-i")
+            cmd_list.extend(config_file)
+            if atom_types is not None:
+                cmd_list.append("-t")
+                cmd_list.extend(atom_types)
+            main(cmd_list)
+            res_list.append(cmd_list)
+    return res_list
+
 def test_meata_data():
     res_list = []
     # res = search_images(config_file, config_format)
@@ -157,6 +184,7 @@ if __name__ == "__main__":
     cmd_list.extend(test_pertub())
     cmd_list.extend(test_convert_config())
     cmd_list.extend(test_convert_configs())
+    cmd_list.extend(test_count_configs())
 
     for cmd in cmd_list:
         print(" ".join(cmd))

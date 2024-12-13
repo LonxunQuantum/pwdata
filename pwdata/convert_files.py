@@ -131,6 +131,19 @@ def do_convert_images(
     image_data = load_files(data_files, input_format, atom_types=atom_types, query=query, cpu_nums=cpu_nums)
     save_images(savepath, image_data, output_format, train_valid_ratio, data_shuffle, merge)
 
+
+def do_count_images(
+    input:list[str],
+    input_format:str = None, 
+    atom_types:list[str]=None,
+    query:str=None,
+    cpu_nums:int=None
+):
+    data_files = search_images(input, input_format)
+    image_data = load_files(data_files, input_format, atom_types=atom_types, query=query, cpu_nums=cpu_nums)
+    print("\n\n******The number of configs is {}******\n\n".format(len(image_data.images)))
+    return len(image_data.images)
+
 '''
 description: 
     save the image_datas to pwmlff/npy or extxyz format
