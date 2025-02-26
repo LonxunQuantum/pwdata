@@ -2,7 +2,7 @@ import re
 from tqdm import tqdm
 from pwdata.image import Image
 from pwdata.calculators.const import elements
-
+from pwdata.utils.format_change import to_numpy_array, to_integer, to_float
 class POSCAR(object):
     def __init__(self, poscar_file, pbc = None) -> None:
         self.image_list:list[Image] = []
@@ -10,7 +10,7 @@ class POSCAR(object):
         self.load_poscar_file(poscar_file)
 
         assert len(self.image_list) > 0, "No system loaded!"
-        self.image_list[0].pbc = pbc
+        self.image_list[0].pbc = to_numpy_array(pbc)
 
     def get(self):
         return self.image_list
@@ -25,17 +25,17 @@ class POSCAR(object):
                 image = Image()
                 self.image_list.append(image)
                 lattice_info = self.parse_lattice(poscar_contents[idx+2:idx+5])
-                image.lattice = lattice_info["lattice"]
+                image.lattice = to_numpy_array(lattice_info["lattice"])
                 atom_names = poscar_contents[idx+5].split()
-                image.atom_type_num = [int(_) for _ in poscar_contents[idx+6].split()]
+                image.atom_type_num = to_numpy_array([int(_) for _ in poscar_contents[idx+6].split()])
                 image.atom_nums = sum(image.atom_type_num)
             elif "direct" in ii.lower() or "cartesian" in ii.lower():
                 image.cartesian = "cartesian" in ii.lower()
                 position = self.parse_position(poscar_contents[idx+1:idx+image.atom_nums+1], atom_names, image.atom_type_num)
-                image.position = position["position"]
+                image.position = to_numpy_array(position["position"])
                 atom_types_image = position["atom_types_image"]
-                image.atom_type = [elements.index(atom_names[_]) for _ in range(len(image.atom_type_num))]
-                image.atom_types_image = [elements.index(atom_types_image[_]) for _ in range(image.atom_nums)]
+                image.atom_type = to_numpy_array([elements.index(atom_names[_]) for _ in range(len(image.atom_type_num))])
+                image.atom_types_image = to_numpy_array([elements.index(atom_types_image[_]) for _ in range(image.atom_nums)])
         image.image_nums = len(self.image_list)
         print("Load data %s successfully!" % poscar_file)
     

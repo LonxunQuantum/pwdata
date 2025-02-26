@@ -6,8 +6,8 @@ from pwdata.calculators.const import elements, ELEMENTMASSTABLE
 
 
 def write_config(image,
-                 filepath,
-                 data_name="tmp.pwdada",
+                 data_path,
+                 data_name="toatom.config",
                  direct=True,
                  sort=None,
                  symbol_count=None,
@@ -108,7 +108,7 @@ def write_config(image,
         atom_type_num = image.atom_type_num
 
     # Write to file
-    output_file = open(os.path.join(filepath, data_name), 'w')
+    output_file = open(os.path.join(data_path, data_name), 'w')
     output_file.write('%d\n' % atom_nums)
     output_file.write('Lattice vector\n')
     for i in range(3):
@@ -122,8 +122,8 @@ def write_config(image,
     print("Convert to %s successfully!" % data_name)
     
 def write_vasp(image,
-               filepath,
-               data_name="tmp.pwdada",
+               data_path,
+               data_name="vasp.poscar",
                direct=False,
                sort=None,
                symbol_count=None,
@@ -229,7 +229,7 @@ def write_vasp(image,
         
     atom_type = [elements[_] for _ in atom_type]
     # Write to file
-    output_file = open(os.path.join(filepath, data_name), 'w')
+    output_file = open(os.path.join(data_path, data_name), 'w')
     output_file.write('Created from %s\n' % data_name)
     output_file.write('1.0\n')
     for i in range(3):
@@ -254,8 +254,8 @@ def write_vasp(image,
     print("Convert to %s successfully!" % data_name)
 
 def write_lammps(image,
-                 filepath,
-                 data_name="tmp.pwdada",
+                 data_path,
+                 data_name="tolammps.lmp",
                  direct=False,
                  sort=None,
                  symbol_count=None,
@@ -388,7 +388,7 @@ def write_lammps(image,
                 LX[i,2] = x[i,2]
 
         # Write to file
-        output_file = open(os.path.join(filepath, data_name), 'w')
+        output_file = open(os.path.join(data_path, data_name), 'w')
         output_file.write('Created from %s\n' % data_name)
         output_file.write("%-12d atoms\n" % (atom_nums))
         output_file.write("%-12d atom types\n" % (len(atom_type)))

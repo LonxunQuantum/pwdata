@@ -5,7 +5,7 @@ from collections import Counter
 from pwdata.image import Image
 from pwdata.calculators.unitconvert_lmps import convert
 from pwdata.calculators.const import ELEMENTMASSTABLE
-
+from pwdata.utils.format_change import to_numpy_array, to_integer, to_float
 class LMP(object):
     def __init__(self, lmp_file, atom_names: list[str] = None, units: str = 'metal', style: str = 'atomic', sort_by_id: bool = True) -> None:
         """Method which reads a LAMMPS data file.
@@ -341,11 +341,11 @@ class LMP(object):
         sc = Counter(atom_types_image)      # a list sc of (atom_types, count) pairs
         atom_type = list(sc.keys())
         atom_type_num = list(sc.values())
-        image.lattice = lattice
-        image.position = positions
+        image.lattice = to_numpy_array(lattice)
+        image.position = to_numpy_array(positions)
         image.cartesian = True
-        image.atom_type = atom_type
-        image.atom_type_num = atom_type_num
-        image.atom_types_image = atom_types_image
+        image.atom_type = to_numpy_array(atom_type)
+        image.atom_type_num = to_numpy_array(atom_type_num)
+        image.atom_types_image = to_numpy_array(atom_types_image)
 
     

@@ -20,36 +20,29 @@ class EXTXYZ(object):
         image_list = read_structures(xyz_file)
         self.image_list=image_list
 
-def save_to_extxyz(image_data_all: list, output_path: str, train_data_path = "train.xyz", valid_data_path = "valid.xyz",
-                    train_ratio = None, random = True, seed = 2024, retain_raw = False, write_patthen="a"
+def save_to_extxyz(image_data_all: list, data_path: str, data_name=None, random = False, seed = None, retain_raw = False, write_patthen="a"
                     ):
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
-    train_file = open(os.path.join(output_path, train_data_path), write_patthen)
+    if not os.path.exists(data_path):
+        os.makedirs(data_path)
+    if data_name is None:
+        data_name = "train.xyz"
+    elif ".xyz" not in data_name:
+        data_name += ".xyz"
+    train_file = open(os.path.join(data_path, data_name), write_patthen)
     image_nums = image_data_all.__len__()
     if seed:
         np.random.seed(seed)
     indices = np.arange(image_nums)    # 0, 1, 2, ..., image_nums-1
     if random:
         np.random.shuffle(indices)              # shuffle the indices
-    assert train_ratio is not None, "train_ratio must be set"
-    train_size = ceil(image_nums * train_ratio)
-    train_indices = indices[:train_size]
-    val_indices = indices[train_size:]
-    if len(val_indices) > 0:
-        valid_file = open(os.path.join(output_path, valid_data_path), write_patthen)
-    for i in range(len(image_data_all)):
+
+    for i in indices:
         image_data = image_data_all[i]
         if not image_data.cartesian:
             image_data._set_cartesian()
         xyz_content = get_xyz_content(image_data)
-        if i in train_indices:
-            train_file.write(xyz_content)
-        elif i in val_indices:
-            valid_file.write(xyz_content)
+        train_file.write(xyz_content)
     train_file.close()
-    if len(val_indices) > 0:
-        valid_file.close()
         # print("Convert to {} and {} successfully!".format(train_data_path, valid_data_path))
     # else:
         # print("Convert to %s successfully!" % train_data_path)

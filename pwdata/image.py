@@ -6,6 +6,7 @@ from pwdata.calculators.const import elements
 from pwdata.build.geometry import wrap_positions
 from pwdata.build.cell import scaled_positions
 from pwdata.lmps import Box2l
+from pwdata.utils.format_change import to_numpy_array, to_integer, to_float
 # 1. initial the image class
 class Image(object):
     def __init__(self, formula = None,
@@ -38,30 +39,38 @@ class Image(object):
         self.formula = formula
         self.atom_nums = atom_nums
         self.iteration = iteration
-        self.atom_type = atom_type
-        self.atom_type_num = atom_type_num
-        if atom_types_image is not None:
-            if isinstance(atom_types_image.tolist(), int):
-                self.atom_types_image = np.array([atom_types_image.tolist()])
-            else:
-                self.atom_types_image = atom_types_image
-        else:
-            self.atom_types_image = []
-        self.Etot = Etot
-        self.Ep = Ep
-        self.Ek = Ek
-        self.scf = scf
-        self.image_nums = image_nums
-        self.lattice = lattice if lattice is not None else []
-        self.virial = virial if virial is not None else []
-        self.position = position if position is not None else []    # this position can be fractional coordinates or cartesian coordinates
-        self.force = force if force is not None else []
-        self.atomic_energy = atomic_energy if atomic_energy is not None else []
-        self.content = content if content is not None else []
-        self.cartesian = cartesian if cartesian is not None else False
-        self.pbc = pbc if pbc is not None else np.zeros(3, bool)
+        self.atom_type = to_numpy_array(atom_type)
+        self.atom_type_num = to_numpy_array(atom_type_num)
+        self.atom_types_image = to_numpy_array(atom_types_image)
+        self.Etot = to_float(Etot)
+        self.Ep = to_float(Ep)
+        self.Ek = to_float(Ek)
+        self.scf = to_integer(scf)
+        self.image_nums = to_integer(image_nums)
+        self.lattice = to_numpy_array(lattice)
+        self.virial = to_numpy_array(virial)
+        self.position = to_numpy_array(position)    # this position can be fractional coordinates or cartesian coordinates
+        self.force = to_numpy_array(force)
+        self.atomic_energy = to_numpy_array(atomic_energy)
+        self.content = content
+        self.cartesian = cartesian
+        self.pbc = to_numpy_array(pbc) if pbc is not None else np.zeros(3, bool)
         self.arrays = self.prim_dict() # here, position will be convert to cartesian coordinates
     
+    def sort_by_atomtype(self):
+        sort_indices = np.argsort(self.atom_types_image)
+        self.atom_types_image = self.atom_types_image[sort_indices]
+        self.position = self.position[sort_indices]
+        self.force = self.force[sort_indices]
+        if self.atomic_energy is not None:
+            self.atomic_energy = self.atomic_energy[sort_indices]
+        cout_type, indices = np.unique(self.atom_types_image, return_index=True)
+        sorted_indices = np.argsort(indices)
+        cout_type = cout_type[sorted_indices]
+        cout_num = np.bincount(self.atom_types_image)[cout_type]
+        self.atom_type = to_numpy_array(cout_type)
+        self.atom_type_num=to_numpy_array(cout_num)
+
     def copy(self):
         """Return a copy."""
         if self.cartesian:
@@ -76,37 +85,40 @@ class Image(object):
             atoms.arrays[name] = a.copy()
         return atoms
 
-    def to(self, output_path, data_name = None, save_format = None, direct = True, sort = False, wrap = False):
+    def to(self, data_path, data_name = None, format = None, direct = True, sort = False, wrap = False):
         """
         Write atoms object to a new file.
 
         Note: Set sort to False for CP2K, because data from CP2K is already sorted!!!. It will result in a wrong order if sort again.
 
         Args:
-        output_path (str): The path to save the file.
+        data_path (str): The path to save the file.
         data_name (str): Save name of the configuration file.
-        save_format (str): The format of the file. Default is None.
+        format (str): The format of the file. Default is None.
         direct (bool): The coordinates of the atoms are in fractional coordinates or cartesian coordinates. (0 0 0) -> (1 1 1)
         sort (bool): Whether to sort the atoms by atomic number. Default is False.
         wrap (bool): hether to wrap the atoms into the simulation box (for pbc). Default is False.
         """
-        assert save_format is not None, "output file format is not specified"
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-        if save_format.lower() == 'pwmat/config':
-            write_config(self, output_path, data_name, sort=sort, wrap=wrap)
-        elif save_format.lower() == 'vasp/poscar':
-            write_vasp(self, output_path, data_name, direct=direct, sort=sort, wrap=wrap)
-        elif save_format.lower() == "lammps/lmp":
-            write_lammps(self, output_path, data_name, sort=sort, wrap=wrap)
-        elif save_format.lower() == "extxyz":
+        assert format is not None, "output file format is not specified"
+        if not os.path.exists(data_path):
+            os.makedirs(data_path)
+        if format.lower() == 'pwmat/config':
+            write_config(self, data_path, data_name, sort=sort, wrap=wrap)
+        elif format.lower() == 'vasp/poscar':
+            write_vasp(self, data_path, data_name, direct=direct, sort=sort, wrap=wrap)
+        elif format.lower() == "lammps/lmp":
+            write_lammps(self, data_path, data_name, sort=sort, wrap=wrap)
+        elif format.lower() == "extxyz":
             raise Exception()
         else:
             raise RuntimeError('Unknown file format')
     
     def prim_dict(self):
         """Return a dictionary of the primitive image data."""
-        return {'atom_types_image': np.array(self.atom_types_image, dtype=np.int64), 'position': np.array(self.position).reshape(-1, 3)}
+        if self.atom_types_image is None:
+            return {'atom_types_image': np.array([], dtype=np.int64), 'position': np.array([]).reshape(-1, 3)}
+        else:
+            return {'atom_types_image': np.array(self.atom_types_image, dtype=np.int64), 'position': np.array(self.position).reshape(-1, 3)}
     
     def extend(self, other):
         """Extend atoms object by appending atoms from *other*."""
@@ -149,7 +161,7 @@ class Image(object):
         if 'pbc' not in wrap_kw:
             wrap_kw['pbc'] = self.pbc
 
-        self.position[:] = self.get_positions(wrap=True, **wrap_kw)
+        self.position= self.get_positions(wrap=True, **wrap_kw)
 
     def get_positions(self, wrap=False, **wrap_kw):
         """Get array of positions.

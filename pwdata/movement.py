@@ -4,7 +4,7 @@ from tqdm import tqdm
 from collections import Counter
 from pwdata.image import Image
 from pwdata.calculators.const import deltaE
-
+from pwdata.utils.format_change import to_numpy_array, to_integer, to_float
 class MOVEMENT(object):
     def __init__(self, movement_file):
         self.image_list:list[Image] = []
@@ -26,29 +26,29 @@ class MOVEMENT(object):
                 self.image_list.append(image)
             elif "Lattice" in ii:
                 lattice_stress = self.parse_lattice_stress(mvm_contents[idx+1:idx+4])
-                image.lattice = lattice_stress["lattice"]
-                image.virial = lattice_stress["virial"]
+                image.lattice = to_numpy_array(lattice_stress["lattice"])
+                image.virial = to_numpy_array(lattice_stress["virial"])
             elif " Position" in ii:
                 position = self.parse_position(mvm_contents[idx+1:idx+image.atom_nums+1])
-                image.position = position["position"]
-                image.atom_type = position["atom_type"]
-                image.atom_type_num = position["atom_type_num"]
-                image.atom_types_image = position["atom_types_image"]
+                image.position = to_numpy_array(position["position"])
+                image.atom_type = to_numpy_array(position["atom_type"])
+                image.atom_type_num = to_numpy_array(position["atom_type_num"])
+                image.atom_types_image = to_numpy_array(position["atom_types_image"])
             elif "Force" in ii:
                 force = self.parse_force(mvm_contents[idx+1: idx+ image.atom_nums+1])
-                image.force = force["force"]
+                image.force = to_numpy_array(force["force"])
             elif "Atomic-Energy" in ii:
                 atomic_energy = self.parse_atomic_energy(mvm_contents[idx+1: idx+ image.atom_nums+1])
                 for i, atom_type in enumerate(image.atom_types_image):
                     atomic_energy["atomic_energy"][i] += deltaE[atom_type]
-                image.atomic_energy = atomic_energy["atomic_energy"]
+                image.atomic_energy = to_numpy_array(atomic_energy["atomic_energy"])
             elif "-------------" in ii:
                 image.content = mvm_contents[idx:]
                 # If Atomic-Energy is not in the file, calculate it from the Ep
-                if len(image.atomic_energy) == 0 and image.atom_type_num:
+                if image.atomic_energy is None and image.atom_type_num is not None:
                     atomic_energy, _, _, _ = np.linalg.lstsq([image.atom_type_num], np.array([image.Ep]), rcond=1e-3)
                     atomic_energy = np.repeat(atomic_energy, image.atom_type_num)
-                    image.atomic_energy = atomic_energy.tolist()
+                    image.atomic_energy = to_numpy_array(atomic_energy)
                 continue
         image.image_nums = len(self.image_list)
         print("Load data %s successfully! \t\t\t\t Image nums: %d" % (movement_file, image.image_nums))

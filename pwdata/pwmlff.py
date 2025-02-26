@@ -2,7 +2,7 @@ import numpy as np
 import os, glob
 from tqdm import tqdm
 from pwdata.image import Image
-
+from pwdata.utils.format_change import to_numpy_array
 class PWNPY(object):
     def __init__(self, files):
         self.image_list:list[Image] = []
@@ -39,7 +39,7 @@ class PWNPY(object):
         coord = None
         for npy_file in npy_files:
             if "atom_type" in npy_file:
-                atom_type = np.load(npy_file).squeeze()
+                atom_type = to_numpy_array(np.load(npy_file).squeeze())
             elif "ei" in npy_file:
                 atomic_energy = np.load(npy_file) if atomic_energy is None else np.concatenate((atomic_energy, np.load(npy_file)))
             elif "energies" in npy_file:

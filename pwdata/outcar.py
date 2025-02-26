@@ -3,6 +3,7 @@ import re
 from tqdm import tqdm
 from collections import Counter
 from pwdata.image import Image, elements_to_order
+from pwdata.utils.format_change import to_numpy_array, to_integer, to_float
 
 class OUTCAR(object):
     def __init__(self, outcar_file) -> None:
@@ -87,27 +88,27 @@ class OUTCAR(object):
                     image.scf = int(line.split()[3][:-1])
                 elif "in kB" in line:
                     virial_info = self.parse_virial_info(converged_image[idx - 1])
-                    image.virial = virial_info["virial"]
+                    image.virial = to_numpy_array(virial_info["virial"]).reshape(3, 3)
                 elif "VOLUME and BASIS" in line:
                     lattice_info = self.parse_lattice(converged_image[idx+5:idx+8])
-                    image.lattice = lattice_info["lattice"]
+                    image.lattice = to_numpy_array(lattice_info["lattice"])
                 elif "TOTAL-FORCE" in line:
                     force_info = self.parse_force(converged_image[idx+2:idx+2+atom_nums])
-                    image.force = force_info["force"] 
-                    image.position = force_info["position"]   
+                    image.force = to_numpy_array(force_info["force"])
+                    image.position = to_numpy_array(force_info["position"]) 
                     image.cartesian = True            
                 elif "free  energy   TOTEN" in line:
                     energy_info = self.parse_energy_info(line)
-                    image.Ep = energy_info["Etot"]
+                    image.Ep = to_float(energy_info["Etot"])
             image.atom_nums = atom_nums
-            image.atom_types_image = atom_types_image
-            image.atom_type = list(Counter(atom_types_image).keys())
-            image.atom_type_num = atom_type_num
+            image.atom_types_image = to_numpy_array(atom_types_image)
+            image.atom_type = to_numpy_array(list(Counter(atom_types_image).keys()))
+            image.atom_type_num = to_numpy_array(atom_type_num)
             # If Atomic-Energy is not in the file, calculate it from the Ep
-            if image is not None and len(image.atomic_energy) == 0 and image.atom_type_num:
+            if image is not None and image.atomic_energy is None and image.atom_type_num is not None:
                 atomic_energy, _, _, _ = np.linalg.lstsq([image.atom_type_num], np.array([image.Ep]), rcond=1e-3)
                 atomic_energy = np.repeat(atomic_energy, image.atom_type_num)
-                image.atomic_energy = atomic_energy.tolist()
+                image.atomic_energy = to_numpy_array(atomic_energy.tolist())
         # atom_type_num = list(counter.values())
         image.image_nums = len(self.image_list)
         print("Load data %s successfully! \t\t\t\t Image nums: %d" % (outcar_file, image.image_nums))

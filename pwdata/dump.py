@@ -6,6 +6,7 @@ from pwdata.image import Image, elements_to_order
 # from calculators.const import elements
 from pwdata.lmps import l2Box
 from pwdata.calculators.unitconvert_lmps import convert
+from pwdata.utils.format_change import to_numpy_array, to_integer, to_float
 
 class DUMP(object):
     def __init__(self, dump_file, atom_names: list[str] = None) -> None:
@@ -62,15 +63,15 @@ class DUMP(object):
                 traj = [jj.split() for jj in dump_contents[idx+1:idx+image.atom_nums+1]]
                 # for jj in dump_contents[idx+1:idx+image.atom_nums+1]:
                 info = self.lammps_data_to_config(np.array(traj), colnames, lattice, lattice_disp, atom_nums, self.atom_names)
-                image.lattice = info["lattice"]
+                image.lattice = to_numpy_array(info["lattice"]).reshape(3,3)
                 # image.lattice_disp = info["lattice_disp"]
-                image.atom_type = info["atom_type"]
-                image.atom_type_num = info["atom_type_num"]
-                image.atom_types_image = info["atom_types_image"]
-                image.position = info["positions"]
+                image.atom_type = to_numpy_array(info["atom_type"])
+                image.atom_type_num = to_numpy_array(info["atom_type_num"])
+                image.atom_types_image = to_numpy_array(info["atom_types_image"])
+                image.position = to_numpy_array(info["positions"])
                 if "forces" in info.keys():
-                    image.force = info["forces"]
-                image.pbc = pbc
+                    image.force = to_numpy_array(info["forces"])
+                image.pbc = to_numpy_array(pbc)
                 image.cartesian = True
 
     def lammps_data_to_config(self,

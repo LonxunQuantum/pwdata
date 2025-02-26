@@ -4,7 +4,7 @@ from tqdm import tqdm
 from collections import Counter
 from pwdata.image import Image
 from pwdata.calculators.const import ELEMENTTABLE
-
+from pwdata.utils.format_change import to_numpy_array, to_integer, to_float
 class DPNPY(object):
     def __init__(self, dp_file):
         self.image_list:list[Image] = []
@@ -46,7 +46,7 @@ class DPNPY(object):
                           cartesian=True, image_nums=i)
             atomic_energy, _, _, _ = np.linalg.lstsq([atom_type_num], np.array([image.Ep]), rcond=1e-3)
             atomic_energy = np.repeat(atomic_energy, atom_type_num)
-            image.atomic_energy = atomic_energy.tolist()
+            image.atomic_energy = to_numpy_array(atomic_energy.tolist())
             self.image_list.append(image)
         
     def load_npy(self, npy_files, atom_nums):
@@ -103,16 +103,13 @@ class DPRAW(object):
         box, coord, energy, force, virial, image_nums = self.load_raw(raw_files, atom_nums)
 
         for i in range(image_nums):
-            try:
-                virial_image = virial[i]
-            except Exception as e:
-                virial_image = None
+            virial_image = virial[i] if virial is not None else None
             image = Image(lattice=box[i], position=coord[i], force=force[i], Ep=energy[i], virial=virial_image,
                           atom_type=atom_type, atom_nums=atom_nums, atom_types_image=atom_types_image, atom_type_num=atom_type_num,
                           cartesian=True, image_nums=i)
             atomic_energy, _, _, _ = np.linalg.lstsq([atom_type_num], np.array([image.Ep]), rcond=1e-3)
             atomic_energy = np.repeat(atomic_energy, atom_type_num)
-            image.atomic_energy = atomic_energy.tolist()
+            image.atomic_energy = to_numpy_array(atomic_energy.tolist())
             self.image_list.append(image)
 
     def load_raw(self, raw_files, atom_nums):
@@ -138,7 +135,8 @@ class DPRAW(object):
 
         image_nums = len(data['box'])
         print("Load data %s successfully! \t\t\t\t Image nums: %d" % (raw_files, image_nums))
-        return data['box'], data['coord'], data['energy'], data['force'], data['virial'], image_nums
+        virial = None if 'virial' not in data.keys() else data['force']
+        return data['box'], data['coord'], data['energy'], data['force'], virial, image_nums
                                           
 def process_line(line, shape):
     return np.array([list(map(float, line.split())) for line in line]).reshape(*shape)

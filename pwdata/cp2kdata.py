@@ -4,6 +4,7 @@ from tqdm import tqdm
 from collections import Counter
 from pwdata.image import Image
 from pwdata.calculators.const import ELEMENTTABLE
+from pwdata.utils.format_change import to_numpy_array, to_integer, to_float
 
 class CP2KMD(object):
     def __init__(self, stdout_file):
@@ -66,7 +67,7 @@ class CP2KMD(object):
                 Ep = float(step_pattern.findall(ii)[0][-1])       # Pot.[a.u.]
                 image = self.image_list[iteration]
                 image.iteration = iteration
-                image.Ep = Ep * 27.2113838565563    # convert to eV
+                image.Ep = to_float(Ep * 27.2113838565563)    # convert to eV
                 # atom_names = []
                 # atom_types_image = []
                 atom_positions = []
@@ -92,15 +93,15 @@ class CP2KMD(object):
                 atom_type = list(sc.keys())
                 atom_type_num = list(sc.values())
                 image.cartesian = True
-                image.atom_nums = atom_nums
-                image.atom_types_image = [ELEMENTTABLE[atom] for atom in atom_names]
-                image.atom_type = [ELEMENTTABLE[atom] for atom in atom_type]
-                image.atom_type_num = atom_type_num
-                image.position = position
+                image.atom_nums = to_integer(atom_nums)
+                image.atom_types_image = to_numpy_array([ELEMENTTABLE[atom] for atom in atom_names])
+                image.atom_type = to_numpy_array([ELEMENTTABLE[atom] for atom in atom_type])
+                image.atom_type_num = to_numpy_array(atom_type_num)
+                image.position = to_numpy_array(position)
                 # If Atomic-Energy is not in the file, calculate it from the Ep
                 atomic_energy, _, _, _ = np.linalg.lstsq([image.atom_type_num], np.array([image.Ep]), rcond=1e-3)
                 atomic_energy = np.repeat(atomic_energy, image.atom_type_num)
-                image.atomic_energy = atomic_energy.tolist()
+                image.atomic_energy = to_numpy_array(atomic_energy.tolist())
     
     def read_xyz(self, traj_file):
         with open(traj_file, "r") as f:
@@ -122,16 +123,16 @@ class CP2KMD(object):
                 sc = Counter(atom_names)
                 atom_type = list(sc.keys())
                 atom_type_num = list(sc.values())
-                image.Ep = Ep * 27.2113838565563    # convert to eV
-                image.position = position
-                image.atom_type = [ELEMENTTABLE[atom] for atom in atom_type]
-                image.atom_type_num = atom_type_num
-                image.atom_types_image = [ELEMENTTABLE[atom] for atom in atom_names]
+                image.Ep = to_float(Ep * 27.2113838565563)    # convert to eV
+                image.position = to_numpy_array(position)
+                image.atom_type = to_numpy_array([ELEMENTTABLE[atom] for atom in atom_type])
+                image.atom_type_num = to_numpy_array(atom_type_num)
+                image.atom_types_image = to_numpy_array([ELEMENTTABLE[atom] for atom in atom_names])
                 image.cartesian = True
                 # If Atomic-Energy is not in the file, calculate it from the Ep
                 atomic_energy, _, _, _ = np.linalg.lstsq([image.atom_type_num], np.array([image.Ep]), rcond=1e-3)
                 atomic_energy = np.repeat(atomic_energy, image.atom_type_num)
-                image.atomic_energy = atomic_energy.tolist()
+                image.atomic_energy = to_numpy_array(atomic_energy.tolist())
 
     def read_label_f(self, label_f_file):
         with open(label_f_file, "r") as f:
@@ -147,7 +148,7 @@ class CP2KMD(object):
                 atom_forces = [[float(_) for _ in atom.split()[1:]] for atom in label_f_contents[idx+1:idx+image.atom_nums+1]]
                 atom_forces = list(zip(atom_name, atom_forces))
                 atom_forces.sort(key=lambda x: x[0])  # Sort atom_forces by atom name
-                image.force = [[tmp * 51.42206318571696 for tmp in force] for _, force in atom_forces]  # convert to eV/angstrom
+                image.force = to_numpy_array([[tmp * 51.42206318571696 for tmp in force] for _, force in atom_forces])  # convert to eV/angstrom
             
 
 class CP2KSCF(object):
@@ -188,28 +189,28 @@ class CP2KSCF(object):
                 image.atom_nums = atom_nums
             elif "ATOMIC COORDINATES IN ANGSTROM" in ii:
                 position_info = self.parse_position(stdout_contents[idx+3:idx+3+atom_nums])
-                image.position = position_info["position"]
-                image.atom_type = position_info["atom_type"]
-                image.atom_type_num = position_info["atom_type_num"]
-                image.atom_types_image = position_info["atom_types_image"]
+                image.position = to_numpy_array(position_info["position"])
+                image.atom_type = to_numpy_array(position_info["atom_type"])
+                image.atom_type_num = to_numpy_array(position_info["atom_type_num"])
+                image.atom_types_image = to_numpy_array(position_info["atom_types_image"])
                 image.cartesian = True
             # elif "SCF run converged in" in ii:
             elif "ENERGY| Total FORCE_EVAL" in ii:
                 # energy = float(stdout_contents[idx-2].split()[-2])  # Pot.[a.u.]
                 energy = float(ii.split()[-1])  # Pot.[a.u.]
-                image.Ep = energy * 27.2113838565563   # convert to eV
+                image.Ep = to_float(energy * 27.2113838565563)   # convert to eV
                 atomic_energy, _, _, _ = np.linalg.lstsq([image.atom_type_num], np.array([image.Ep]), rcond=1e-3)
                 atomic_energy = np.repeat(atomic_energy, image.atom_type_num)
-                image.atomic_energy = atomic_energy.tolist()
+                image.atomic_energy = to_numpy_array(atomic_energy.tolist())
                 # atomic_energy_dict = dict(zip(image.atom_types_image, atomic_energy))
                 # image.atomic_energy = [atomic_energy_dict[atom_type] for atom_type in image.atom_types_image]
             elif "ATOMIC FORCES in [a.u.]" in ii:
                 force_info = self.parse_force(stdout_contents[idx+3:idx+3+atom_nums])
-                image.force = force_info["force"]
+                image.force = to_numpy_array(force_info["force"])
             elif "STRESS| Analytical stress tensor" in ii:
                 stress_info = parse_stress(stdout_contents[idx+2:idx+5])
                 virial = gpa2ev(stress_info["stress"], volume)
-                image.virial = virial
+                image.virial = to_numpy_array(virial).reshape(3,3)
     
     def parse_position(self, position_content):
         position = [[float(_) for _ in atom.split()[4:7]] for atom in position_content]

@@ -8,13 +8,13 @@ from pwdata import Config
 from pwdata.utils.constant import FORMAT
 from pwdata.config import string2index
 def trajs2config():
-    # atom_types = ["Hf", "O"] # for lammps
-    input_file = "/data/home/wuxingxing/datas/auto_test_pwmlff/pwdata_test/vasp_data/Si_OUTCAR"
-    save_dir = "/data/home/wuxingxing/datas/auto_test_pwmlff/pwdata_test/vasp_data/tmp_test"
-    input_format="vasp/outcar"
-    save_format = "vasp/poscar"
-    index_str="10:" #'start:stop:step' -> '0:10' is '0:10:1' 
-    image = Config(data_path=input_file, format=input_format, index=index_str, atom_names=None)
+    atom_types = ["Hf", "O"] # for lammps
+    input_file = "/data/home/wuxingxing/datas/pwmat_mlff_workdir/hfo2/lmps_test/jit_cpu/traj/0.lammpstrj"
+    save_dir = "/data/home/wuxingxing/datas/pwmat_mlff_workdir/hfo2/lmps_test/jit_cpu/traj/"
+    input_format="lammps/dump"
+    save_format = "pwmat/config"
+    index_str=":" #'start:stop:step' -> '0:10' is '0:10:1' 
+    image = Config(data_path=input_file, format=input_format, index=index_str, atom_names=atom_types)
     tmp_image_data = image.images
     indexs = string2index(index_str)
     if isinstance(indexs, slice):

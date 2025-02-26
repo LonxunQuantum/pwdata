@@ -26,9 +26,9 @@ def do_convert_config(input_file:str,
     if savename is None:
         savename = FORMAT.get_filename_by_format(image.format)
 
-    image.to(output_path = os.path.dirname(os.path.abspath(savename)),
+    image.to(data_path = os.path.dirname(os.path.abspath(savename)),
           data_name = os.path.basename(savename),
-          save_format = output_format,
+          format = output_format,
           direct = direct,
           sort = True)
     return os.path.abspath(savename)
@@ -50,9 +50,9 @@ def do_scale_cell(input_file:str,
         savename = FORMAT.get_filename_by_format(image.format)
     for idx, factor in enumerate(scale_factor):
         scaled_structs = scale_cell(image, factor)
-        scaled_structs.to(output_path = os.path.dirname(os.path.abspath(savename)),
+        scaled_structs.to(data_path = os.path.dirname(os.path.abspath(savename)),
             data_name = "{}_{}".format(factor, os.path.basename(savename)),
-            save_format = output_format,
+            format = output_format,
             direct = direct,
             sort = True)
     return os.path.abspath(savename)
@@ -75,9 +75,9 @@ def do_super_cell(input_file:str,
         output_format = FORMAT.pwmat_config if image.format == FORMAT.cp2k_scf else image.format
     if savename is None:
         savename = FORMAT.get_filename_by_format(image.format)
-    scaled_structs.to(output_path = os.path.dirname(os.path.abspath(savename)),
+    scaled_structs.to(data_path = os.path.dirname(os.path.abspath(savename)),
           data_name = os.path.basename(savename),
-          save_format = output_format,
+          format = output_format,
           direct = direct,
           sort = True)
     return os.path.abspath(savename)
@@ -106,9 +106,9 @@ def do_perturb(input_file:str,
     if output_format is None:
         output_format = FORMAT.pwmat_config if image.format == FORMAT.cp2k_scf else image.format
     for tmp_perturbed_idx, tmp_pertubed_struct in enumerate(perturbed_structs):
-        tmp_pertubed_struct.to(output_path = save_path,
+        tmp_pertubed_struct.to(data_path = save_path,
                                 data_name = "{}_{}".format(tmp_perturbed_idx, save_name_prefix),
-                                save_format = output_format,
+                                format = output_format,
                                 direct = direct,
                                 sort = True)
         perturb_files.append("{}_{}".format(tmp_perturbed_idx, save_name_prefix))
@@ -119,7 +119,6 @@ def do_convert_images(
     input_format:str = None, 
     savepath = None, #'the/path/pwmlff-datas'
     output_format = None, 
-    train_valid_ratio = None, 
     data_shuffle = None, 
     gap = None,
     atom_types:list[str]=None,
@@ -129,8 +128,7 @@ def do_convert_images(
 ):
     data_files = search_images(input, input_format)
     image_data = load_files(data_files, input_format, atom_types=atom_types, query=query, cpu_nums=cpu_nums)
-    save_images(savepath, image_data, output_format, train_valid_ratio, data_shuffle, merge)
-
+    save_images(savepath, image_data, output_format, data_shuffle, merge)
 
 def do_count_images(
     input:list[str],
@@ -157,13 +155,12 @@ param {*} data_shuffle
 return {*}
 author: wuxingxing
 '''
-def save_images(savepath, image_data, output_format, train_valid_ratio=1, data_shuffle=False, merge=True):
+def save_images(savepath, image_data, output_format, data_shuffle=False, merge=True):
     if merge is True and output_format == FORMAT.extxyz:
         save_dir = savepath
         image_data.to(
-                        output_path=save_dir,
-                        save_format=output_format,
-                        train_ratio = train_valid_ratio, 
+                        data_path=save_dir,
+                        format=output_format,
                         random=data_shuffle,
                         seed = 2024, 
                         retain_raw = False,
@@ -175,9 +172,8 @@ def save_images(savepath, image_data, output_format, train_valid_ratio=1, data_s
             save_dir = os.path.join(savepath, key)
             image_data.images = images
             image_data.to(
-                        output_path=save_dir,
-                        save_format=output_format,
-                        train_ratio = train_valid_ratio, 
+                        data_path=save_dir,
+                        format=output_format,
                         random=data_shuffle,
                         seed = 2024, 
                         retain_raw = False,
@@ -185,9 +181,8 @@ def save_images(savepath, image_data, output_format, train_valid_ratio=1, data_s
                         )
     else: # for pwmlff/mpy
         image_data.to(
-                    output_path=savepath,
-                    save_format=output_format,
-                    train_ratio = train_valid_ratio, 
+                    data_path=savepath,
+                    format=output_format,
                     random=data_shuffle,
                     seed = 2024, 
                     retain_raw = False,
@@ -244,8 +239,11 @@ def search_by_format(workDir, format):
         if format == FORMAT.pwmlff_npy:    
             for root, dirs, files in os.walk(workDir):
                 if 'energies.npy' in files:
-                    if "train" in os.path.basename(root):
-                        data_path[FORMAT.pwmlff_npy].append(os.path.dirname(root))
+                    data_path[FORMAT.pwmlff_npy].append(root)
+                    # if "train" in os.path.basename(root):
+                    #     data_path[FORMAT.pwmlff_npy].append(os.path.dirname(root))
+                    # elif "valid" in os.path.basename(root):
+                    #     data_path[FORMAT.pwmlff_npy].append(os.path.dirname(root))
 
         if format == FORMAT.extxyz:
             for path, dirList, fileList in os.walk(workDir):
@@ -289,7 +287,7 @@ def load_files(input_dict:dict, input_format:str=None, atom_types:list[str]=None
                 else:
                     tmp_image_data = Config(input_format, metapaths, atom_names=atom_types, query=query, cpu_nums=cpu_nums)
                     image_data.images.extend(tmp_image_data.images)
-                print("There are a total of {} aselmdb, and the current progress has been loaded {} %".format(lmdb_nums, np.round(idx*chunk_size/lmdb_nums, 2)))
+                # print("There are a total of {} aselmdb, and the current progress has been loaded {} %".format(lmdb_nums, np.round(idx*chunk_size/lmdb_nums, 2)))
         else:
             if len(input_dict[FORMAT.traj]) > 0:# the input is traj files
                 for data_path in  tqdm(input_dict[FORMAT.traj], total=len(input_dict[FORMAT.traj])):

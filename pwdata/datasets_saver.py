@@ -6,81 +6,56 @@ from collections import defaultdict
 from pwdata.calculators.const import elements
 from pwdata.utils.constant import get_atomic_name_from_number, FORMAT
 from pwdata.image import Image
-def save_to_dataset(image_data: list, datasets_path = "./PWdata", train_data_path = "train", valid_data_path = "valid",
-                    train_ratio = None, random = True, seed = 2024, retain_raw = False, data_name = None, write_patthen="w"):
+from pwdata.utils.format_change import to_numpy_array
+def save_to_dataset(image_data: list, data_path = "./", random = False, seed = None, retain_raw = False, data_name = "PWdata", write_patthen="w"):
     """ Get and process the data from the input file. """
+    # sort atom order
+    for image in image_data:
+        image.sort_by_atomtype()
     image_dict = split_image_by_atomtype_nums(image_data)
     for key, image_datas in image_dict.items():
-        save_image(image_datas, datasets_path = datasets_path, train_data_path = train_data_path, valid_data_path = valid_data_path,
-                    train_ratio = train_ratio, random = random, seed = 2024, retain_raw = retain_raw, data_name = key, write_patthen=write_patthen)
+        save_image(image_datas, data_path = data_path, random = random, seed = seed, retain_raw = retain_raw, data_name = data_name, write_patthen=write_patthen)
 
-def save_image(image_data: list, datasets_path = "./PWdata", train_data_path = "train", valid_data_path = "valid",
-                    train_ratio = None, random = True, seed = 2024, retain_raw = False, data_name = None, write_patthen="w"):
-
+def save_image(image_data: list, data_path = None, random = False, seed = None, retain_raw = False, data_name = "PWdata", write_patthen="w"):
     lattice, position, energies, ei, forces, virials, atom_type, atom_types_image, image_nums = get_pw(image_data)
 
-    if data_name is None:
-        sc = Counter(atom_types_image)  # a list sc of (symbol, count) pairs
-        temp_data_name = ''.join([elements[key] + str(count) for key, count in sc.items()])
-        data_name = temp_data_name
-        suffix = 0
-        while os.path.exists(os.path.join(datasets_path, data_name)):
-            suffix += 1
-            data_name = temp_data_name + "_" + str(suffix)
-    else:
-        pass
+    sc = Counter(atom_types_image)  # a list sc of (symbol, count) pairs
+    temp_atom_name = ''.join([elements[key] + str(count) for key, count in sc.items()])
+    atom_name = temp_atom_name
+    suffix = 0
+    while os.path.exists(os.path.join(data_path, atom_name)):
+        suffix += 1
+        atom_name = temp_atom_name + "_" + str(suffix)
 
-    labels_path = os.path.join(datasets_path, data_name)
-    if not os.path.exists(datasets_path):
-        os.makedirs(datasets_path, exist_ok=True)
+    labels_path = os.path.join(data_path, data_name, atom_name)
+    if not os.path.exists(data_path):
+        os.makedirs(data_path, exist_ok=True)
     if not os.path.exists(labels_path):
         os.makedirs(labels_path, exist_ok=True)
     
-    if seed:
+    if seed is not None:
         np.random.seed(seed)
     indices = np.arange(image_nums)    # 0, 1, 2, ..., image_nums-1
     if random:
         np.random.shuffle(indices)              # shuffle the indices
-    assert train_ratio is not None, "train_ratio must be set"
-    train_size = ceil(image_nums * train_ratio)
-    train_indices = indices[:train_size]
-    val_indices = indices[train_size:]
+
     # image_nums = [image_nums]
     atom_types_image = atom_types_image.reshape(1, -1)
 
-    train_data = [lattice[train_indices], position[train_indices], energies[train_indices],
-                    forces[train_indices], atom_types_image, atom_type,
-                    ei[train_indices]]
-    val_data = [lattice[val_indices], position[val_indices], energies[val_indices],
-                    forces[val_indices], atom_types_image, atom_type,
-                    ei[val_indices]]
+    train_data = [lattice[indices], position[indices], energies[indices],
+                    forces[indices], atom_types_image, atom_type,
+                    ei[indices]]
     
     if len(virials) != 0:
-        train_data.append(virials[train_indices])
-        val_data.append(virials[val_indices])
+        train_data.append(virials[indices])
     else:
         train_data.append([])
-        val_data.append([])
 
-    if train_ratio == 1.0 or len(val_indices) == 0:
-        labels_path = os.path.join(labels_path, train_data_path)
-        if not os.path.exists(labels_path):
-            os.makedirs(labels_path)
-        if retain_raw:
-            save_to_raw(train_data, train_data_path)
-        save_to_npy(train_data, labels_path)
-    else:
-        train_path = os.path.join(labels_path, train_data_path) 
-        val_path = os.path.join(labels_path, valid_data_path)
-        if not os.path.exists(train_path):
-            os.makedirs(train_path)
-        if not os.path.exists(val_path):
-            os.makedirs(val_path)
-        if retain_raw:
-            save_to_raw(train_data, train_path)
-            save_to_raw(val_data, val_path)
-        save_to_npy(train_data, train_path)
-        save_to_npy(val_data, val_path)
+    if not os.path.exists(labels_path):
+        os.makedirs(labels_path)
+    if retain_raw:
+        save_to_raw(train_data, labels_path)
+    save_to_npy(train_data, labels_path)
 
 def save_to_raw(data, directory):
     filenames = ["lattice.dat", "position.dat", "energies.dat", "forces.dat", "image_type.dat", "atom_type.dat", "ei.dat", "virials.dat"]
@@ -119,8 +94,8 @@ def get_pw(image_data):
         else:
             all_virials.append(np.full((3, 3), -1e5))
     image_nums = len(image_data)
-    atom_type = np.array(image.atom_type).reshape(1, -1)
-    atom_types_image = np.array(image.atom_types_image)
+    atom_type = to_numpy_array(image.atom_type)
+    atom_types_image = to_numpy_array(image.atom_types_image)
     all_lattices = np.array(all_lattices).reshape(image_nums, 9)
     all_postions = np.array(all_postions).reshape(image_nums, -1)
     all_energies = np.array(all_energies).reshape(image_nums, 1)

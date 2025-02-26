@@ -206,15 +206,15 @@ class Config(object):
             image = [image]
         return image, format.lower()
     
-    def to(self, output_path, save_format = None, **kwargs):
+    def to(self, data_path, format = None, **kwargs):
         """
         Write all images (>= 1) object to a new file.
 
         Note: Set sort to False for CP2K, because data from CP2K is already sorted!!!. It will result in a wrong order if sort again.
 
         Args:
-        output_path (str): Required. The path to save the file.
-        save_format (str): Required. The format of the file. Default is None.
+        data_path (str): Required. The path to save the file.
+        format (str): Required. The format of the file. Default is None.
 
         Kwargs:
 
@@ -237,40 +237,40 @@ class Config(object):
             * retain_raw (bool): Whether to retain the raw data. Default is False.
 
         """
-        assert save_format is not None, "output file format is not specified"
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
+        assert format is not None, "output file format is not specified"
+        if not os.path.exists(data_path):
+            os.makedirs(data_path)
 
-        if save_format in FORMAT.support_config_format:
-            self.write_image(self.images[0], output_path, save_format, **kwargs)
+        if format in FORMAT.support_config_format:
+            self.write_image(self.images[0], data_path, format, **kwargs)
         else:
-            self.multi_to(self.images, output_path, save_format, **kwargs)
+            self.multi_to(self.images, data_path, format, **kwargs)
         
-    def multi_to(self, images, output_path, save_format, **kwargs):
+    def multi_to(self, images, data_path, format, **kwargs):
         """
         Write multiple images to new files.
         """
-        if save_format.lower() in ['pwmat/config', 'vasp/poscar', 'lammps/lmp']:
+        if format.lower() in ['pwmat/config', 'vasp/poscar', 'lammps/lmp']:
             data_name = kwargs['data_name']
             for i, image in enumerate(images):
                 kwargs['data_name'] = data_name + "_{0}".format(i)
-                self.write_image(image, output_path, save_format, **kwargs)
+                self.write_image(image, data_path, format, **kwargs)
         else:
-            self.write_image(images, output_path, save_format, **kwargs)
+            self.write_image(images, data_path, format, **kwargs)
 
-    def write_image(self, image, output_path, save_format, **kwargs):
-        if save_format.lower() == 'pwmat/config':
-            write_config(image, output_path, **kwargs)
-        elif save_format.lower() == 'vasp/poscar':
-            write_vasp(image, output_path, **kwargs)
-        elif save_format.lower() == "lammps/lmp":
-            write_lammps(image, output_path, **kwargs)
-        elif save_format.lower() == "pwmat/movement":
-            save_to_movement(image, output_path, **kwargs)
-        elif save_format.lower() == "extxyz":
-            save_to_extxyz(image, output_path, **kwargs)
-        elif save_format.lower() == "pwmlff/npy":
-            save_to_dataset(image, datasets_path=output_path, **kwargs)
+    def write_image(self, image, data_path, format, **kwargs):
+        if format.lower() == 'pwmat/config':
+            write_config(image, data_path, **kwargs)
+        elif format.lower() == 'vasp/poscar':
+            write_vasp(image, data_path, **kwargs)
+        elif format.lower() == "lammps/lmp":
+            write_lammps(image, data_path, **kwargs)
+        elif format.lower() == "pwmat/movement":
+            save_to_movement(image, data_path, **kwargs)
+        elif format.lower() == "extxyz":
+            save_to_extxyz(image, data_path, **kwargs)
+        elif format.lower() == "pwmlff/npy":
+            save_to_dataset(image, data_path=data_path, **kwargs)
         else:
             raise RuntimeError('Unknown file format')
 

@@ -38,7 +38,7 @@ def test_scale_cell():
             atom_types = None
         for idj, format in enumerate(["pwmat/config","vasp/poscar","lammps/lmp"]):
             save_path =  os.path.join(save_dir, "scale_{}_{}_{}".format(idi, idj, FORMAT.get_filename_by_format(format)))
-            cmd_list = ["", "scale_cell", "-r", "0.98", "0.99", "0.97", "0.95",  "-i", config_file, "-s", save_path, "-o", format, "-c"]#"-f", config_format, 
+            cmd_list = ["", "scale_cell", "-r", "1.2", "1.1", "1.0", "0.99", "0.98",  "-i", config_file, "-s", save_path, "-o", format, "-c"]#"-f", config_format, 
             if atom_types is not None:
                 cmd_list.append("-t")
                 cmd_list.extend(atom_types)
@@ -115,7 +115,7 @@ def test_convert_configs():
             cmd_list = ["", "convert_configs"]
             cmd_list.append("-i")
             cmd_list.extend(config_file)
-            cmd_list.extend([  "-s", save_path, "-o", format, "-p", "1.0", "-r", "-g", "1", "-m", '1'])#"-f", config_format,
+            cmd_list.extend([  "-s", save_path, "-o", format, "-r", "-g", "1", "-m", '1'])#"-f", config_format,
             if atom_types is not None:
                 cmd_list.append("-t")
                 cmd_list.extend(atom_types)
