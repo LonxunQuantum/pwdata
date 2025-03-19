@@ -24,7 +24,7 @@ def do_convert_config(input_file:str,
     if output_format is None:
         output_format = FORMAT.pwmat_config if image.format == FORMAT.cp2k_scf else image.format
     if savename is None:
-        savename = FORMAT.get_filename_by_format(image.format)
+        savename = FORMAT.get_filename_by_format(output_format)
 
     image.to(data_path = os.path.dirname(os.path.abspath(savename)),
           data_name = os.path.basename(savename),

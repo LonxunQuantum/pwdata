@@ -2,7 +2,7 @@
 description: 
 Convert MPtraj JSON file to aselmdb format
 '''
-
+import os
 import json
 from pwdata.fairchem.datasets.ase_datasets import LMDBDatabase
 from ase import Atoms
@@ -12,17 +12,18 @@ from tqdm import tqdm
 import numpy as np
 
 def MPjson2lmdb():
-    mp_file = "/data/home/wuxingxing/codespace/pwdata/examples/mp_data/mptest.json"
-    save_file = "/data/home/wuxingxing/codespace/pwdata/examples/mp_data/sub.aselmdb"
-    Mpjson = json.load(open(mp_file))
+    mp_file = "/data/home/wuxingxing/codespace/pwdata_dev/examples/mp_data/mptest.json"
+    # mpjson = "/share/public/PWMLFF_test_data/eqv2-models/datasets/MPtrj/MPtrj_2022.9_full.json" 12G too big
+    save_file = "/data/home/wuxingxing/codespace/pwdata_dev/examples/mp_data/mpjson.aselmdb"
+    matjson = json.load(open(mp_file))
     db = LMDBDatabase(filename=save_file, readonly=False)
-    for key_1, val_1 in tqdm(Mpjson.items(), total=len(Mpjson.keys())):
+    for key_1, val_1 in tqdm(matjson.items(), total=len(matjson.keys())):
         for key_2, val_2 in val_1.items():
-            _atomrow, data = cvt_dict_2_atomrow(val_2)
+            _atomrow, data = cvt_mpdict_2_atomrow(val_2)
             db._write(_atomrow, key_value_pairs={}, data=data)
     db.close()
-    
-def cvt_dict_2_atomrow(config:dict):
+
+def cvt_mpdict_2_atomrow(config:dict):
     cell = read_from_dict('matrix', config['structure']['lattice'], require=True)
     atom_type_list = get_atomic_number_from_name([_['label'] for _ in config['structure']['sites']])
     position = [_['xyz'] for _ in config['structure']['sites']]
@@ -60,26 +61,6 @@ def read_from_dict(key:str, config:dict, default=None, require=False):
             raise ValueError("key {} not found in config".format(key))
         else:
             return default
-
-# def test_lmdb():
-#     from pwdata.fairchem.datasets.ase_datasets import AseDBDataset
-    # search_dict = {'src': '/data/home/wuxingxing/codespace/pwdata/examples/meta_data/alex_val/alex_go_aao_001.aselmdb'}
-    # dataset = AseDBDataset(config=search_dict)
-    # atom_list = list(dataset.dbs[0].select("Li"))
-    # std = atom_list[0]
-    
-    # search_dict = {'src': '/data/home/wuxingxing/codespace/pwdata/examples/MPtrj.aselmdb'}
-    # dataset2 = AseDBDataset(config=search_dict)
-    # atom_list2 = list(dataset2.dbs[0].select("Li"))
-    # dev = atom_list2[0]
-
-    # search_dict = {'src': '/data/home/wuxingxing/codespace/pwdata/examples/mp_data/sub.aselmdb'}
-    # dataset3 = AseDBDataset(config=search_dict)
-    # atom_list3 = list(dataset3.dbs[0].select())
-    # std3 = atom_list3[0]
-
-    # print()
-
 if __name__=="__main__":
     MPjson2lmdb()
 

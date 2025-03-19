@@ -53,12 +53,12 @@ def get_xyz_content(image_data:Image):
         image_data._set_cartesian()
     xyz_content +="%d\n" % image_data.atom_nums
     # data_name.write("Iteration: %s\n" % image_data.iteration)
-    output_head = 'Lattice="%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f" Properties=species:S:1:pos:R:3:force:R:3 pbc="T T T" energy={} '.format(image_data.Ep)
+    output_head = 'Lattice="%.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f" Properties=species:S:1:pos:R:3:force:R:3 pbc="T T T" energy={} '.format(image_data.Ep)
     output_extended = (image_data.lattice[0][0], image_data.lattice[0][1], image_data.lattice[0][2], 
                         image_data.lattice[1][0], image_data.lattice[1][1], image_data.lattice[1][2], 
                         image_data.lattice[2][0], image_data.lattice[2][1], image_data.lattice[2][2])
     if image_data.virial is not None and len(image_data.virial) > 0:
-        output_head += 'virial="%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f"'
+        output_head += 'virial="%.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f"'
         virial = image_data.get_virial()
         output_extended += (virial[0][0], virial[0][1], virial[0][2], 
                             virial[1][0], virial[1][1], virial[1][2], 

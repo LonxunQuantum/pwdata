@@ -219,7 +219,7 @@ def run_convert_config(cmd_list:list[str]):
     # else:
     #     FORMAT.check_format(args.output_format, [FORMAT.pwmat_config, FORMAT.vasp_poscar, FORMAT.lammps_lmp])
     do_convert_config(args.input, args.input_format, args.atom_types, args.savename, args.output_format, args.cartesian is False)
-    print("scaled the config done!")
+    print("convert the config to {} format done!".format(args.output_format))
 
 def run_convert_configs(cmd_list:list[str]):
     parser = argparse.ArgumentParser(description='This command is used for transferring structural files between different apps. For extxyz format, all configs will save to one file, \nFor pwmlff/npy, configs with same atom types and atom nums in each type will save to one dir.\n')

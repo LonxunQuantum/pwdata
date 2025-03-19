@@ -53,7 +53,7 @@ class Image(object):
         self.force = to_numpy_array(force)
         self.atomic_energy = to_numpy_array(atomic_energy)
         self.content = content
-        self.cartesian = cartesian
+        self.cartesian = cartesian if cartesian is not None else False
         self.pbc = to_numpy_array(pbc) if pbc is not None else np.zeros(3, bool)
         self.arrays = self.prim_dict() # here, position will be convert to cartesian coordinates
     
