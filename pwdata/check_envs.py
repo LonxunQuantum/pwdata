@@ -53,3 +53,16 @@ def cmd_infos():
     info += "__________________________________________________________________________________________|\n\n"
 
     print(info)
+
+def comm_info():
+    print("\n" + "=" * 50) 
+    print("         PWDATA Basic Information")
+    print("=" * 50) 
+    print("Version: 0.5.2")
+    print("support pwact: >= 0.3.0")
+    print("support MatPL: >= 2025.3")
+    print("Contact: support@pwmat.com")
+    print("Citation: https://github.com/LonxunQuantum/MatPL")
+    print("Manual online: http://doc.lonxun.com/PWMLFF/")
+    print("=" * 50)  
+    print("\n\n")

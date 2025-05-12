@@ -24,7 +24,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import argparse
 from pwdata.convert_files import do_scale_cell, do_super_cell, do_perturb, do_convert_config, do_convert_images, do_count_images
 from pwdata.utils.constant import FORMAT, get_atomic_name_from_number
-from pwdata.check_envs import print_cmd
+from pwdata.check_envs import print_cmd, comm_info
 
 # from pwdata.open_data.meta_data import get_meta_data
 
@@ -49,6 +49,7 @@ def string2index(string: str) -> Union[int, slice, str]:
 pwdata convert -i dirs -f extxyz -s dir 
 """
 def main(cmd_list:list=None):
+
     if cmd_list is None:
         cmd_list = sys.argv
     if len(cmd_list) == 2 and '.json' in cmd_list[1].lower():
@@ -203,7 +204,7 @@ def run_convert_config(cmd_list:list[str]):
     parser.add_argument('-i', '--input',         type=str, required=True, help='The input file path')
     parser.add_argument('-f', '--input_format',  type=str, required=False, default=None, help="The input file format, if not specified, the format will be automatically inferred based on the input file. the supported format as ['pwmat/config','vasp/poscar', 'lammps/lmp', 'cp2k/scf']")
     parser.add_argument('-s', '--savename',      type=str, required=False, default=None, help="The output file name, if not provided, the 'atom.config' for pwmat/config, 'POSCAR' for vasp/poscar, 'lammps.lmp' for lammps/lmp will be used")
-    parser.add_argument('-o', '--output_format', type=str, required=False, default=None, help="the output file format, only support the format ['pwmat/config','vasp/poscar', 'lammps/lmp'], if not provided, the input format be used. \nNote: that outputting cp2k/scf format is not supported. In this case, the default will be adjusted to pwmat atom.config")
+    parser.add_argument('-o', '--output_format', type=str, required=True, default=None, help="the output file format, only support the format ['pwmat/config','vasp/poscar', 'lammps/lmp']")
     parser.add_argument('-c', '--cartesian',     action='store_true', help="if '-c' is set, the cartesian coordinates will be used, otherwise the fractional coordinates will be used. 'pwmat/config' only supports fractional coordinates, in which case this parameter becomes invalid")
     parser.add_argument('-t', '--atom_types',    type=str, required=False, default=None, nargs='+', help="the atom type list of 'lammps/lmp' or 'lammps/dump' input file, the order is same as the input file")
     args = parser.parse_args(cmd_list)
@@ -290,4 +291,5 @@ def count_configs(cmd_list:list[str]):
     do_count_images(input_list, args.input_format, atom_types, args.query, args.cpu_nums)
 
 if __name__ == "__main__":
+    comm_info()
     main()

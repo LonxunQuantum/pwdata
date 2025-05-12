@@ -13,7 +13,8 @@ class META(object):
     def __init__(self, files: list[str], atom_names: list[str] = None, query: str = None, cpu_nums: int=None):
         self.image_list:list[Image] = []
         self.load_files_cpus(files, atom_names, query, cpu_nums)
-        assert len(self.image_list) > 0, "No data loaded!"
+        if len(self.image_list) < 1:
+            print("Warining! No data loaded!")
         # self.load_files(files, atom_names, query, cpu_nums) used to debug on one cpu
 
     def get(self):
@@ -51,6 +52,14 @@ class META(object):
             cpu_nums = min(cpu_nums, multiprocessing.cpu_count())
         if isinstance(input, str):
             input = [input]
+        # single cpu debug
+        # atom_lists = []
+        # for i, _ in enumerate(input):
+        #     print(i)
+        #     _atom_lists = load_and_query_db(_, atom_types, query, filter_with_elements)
+        #     for _ in _atom_lists:
+        #         print(_.formula)
+        #     atom_lists.extend(_atom_lists)
         # 使用多进程并行加载和查询数据库
         with ProcessPoolExecutor(max_workers=cpu_nums) as executor:
             futures = []
@@ -65,6 +74,8 @@ class META(object):
         # 处理所有结果
         for atom_list in atom_lists:
             if len(atom_list) > 0:
+                for _ in atom_list:
+                    print(_.formula)
                 self.image_list.extend([to_image(Atoms) for Atoms in atom_list])
 
     @staticmethod
