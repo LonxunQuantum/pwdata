@@ -330,7 +330,10 @@ def infer_format(data_path: str, pbc = None, atom_names = None, index = ':', **k
         pass    
     try:
         image = META(data_path, atom_names, **kwargs).image_list[index]
-        return image, FORMAT.meta
+        if len(image) == 0:
+            pass
+        else:
+            return image, FORMAT.meta
     except Exception as e:
         pass
     try:

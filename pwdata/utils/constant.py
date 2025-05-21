@@ -119,7 +119,7 @@ def get_atomic_number_from_name(atomic_names:list[str]):
 def get_atomic_name_from_number(atomic_number:list[int]):
     res = []
     for number in atomic_number:
-        res.append(ELEMENTTABLE_2[number])
+        res.append(ELEMENTTABLE_2[int(number)])
     return res
 
 def get_atomic_name_from_str(atom_strs):
@@ -127,3 +127,6 @@ def get_atomic_name_from_str(atom_strs):
         return [int(_) for _ in atom_strs]
     except ValueError:
         return get_atomic_number_from_name(atom_strs)
+
+def check_atom_type_name(atom_types:list[str]):
+    return all([_ in ELEMENTTABLE.keys() for _ in atom_types])

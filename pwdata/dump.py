@@ -71,6 +71,8 @@ class DUMP(object):
                 image.position = to_numpy_array(info["positions"])
                 if "forces" in info.keys():
                     image.force = to_numpy_array(info["forces"])
+                if "data" in info.keys():
+                    image.data = info["data"]
                 image.pbc = to_numpy_array(pbc)
                 image.cartesian = True
 
@@ -115,10 +117,11 @@ class DUMP(object):
         if "element" in colnames:
             # priority to elements written in file
             elements = data[:, colnames.index("element")]
+            atom_types_image = elements_to_order(atom_names, elements, atom_nums, is_atom_type_name=True)
         elif "type" in colnames:
             # fall back to `types` otherwise
             elements = data[:, colnames.index("type")].astype(int)
-
+            atom_types_image = elements_to_order(atom_names, elements, atom_nums)
             # reconstruct types from given specorder
             if specorder:
                 elements = [specorder[t - 1] for t in elements]
@@ -128,7 +131,7 @@ class DUMP(object):
             # lots of cases and new code I guess
             raise ValueError("Cannot determine atom types form LAMMPS dump file")
         # elements2type = np.array(atom_names)[elements - 1]
-        atom_types_image = elements_to_order(atom_names, elements, atom_nums)
+
         sc = Counter(atom_types_image)      # a list sc of (atom_types, count) pairs
         atom_type = list(sc.keys())
         atom_type_num = list(sc.values())
@@ -162,6 +165,11 @@ class DUMP(object):
         else:
             raise ValueError("No atomic positions found in LAMMPS output")
 
+        peratom_info = {}
+        for param in colnames:
+            if param not in ["element", "id", "type", "x", "y", "z", "xs", "ys", "zs", "xu", "yu", "zu", "xsu", "ysu", "zsu"]:
+               peratom_info[param] = get_quantity([param], "distance") 
+        
         velocities = get_quantity(["vx", "vy", "vz"], "velocity")
         charges = get_quantity(["q"], "charge")
         forces = get_quantity(["fx", "fy", "fz"], "force")
@@ -193,6 +201,6 @@ class DUMP(object):
             all["lattice"] = lattice
         if lattice_disp is not None:
             all["lattice_disp"] = lattice_disp
-    
+        all["data"] = peratom_info
         return all
     

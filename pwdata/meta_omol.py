@@ -1,15 +1,19 @@
 import numpy as np
 import os, glob
 from tqdm import tqdm
-from pwdata.image import Image
+from pwdata.molecule import Molecule as Image
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing
 from collections import Counter
 from functools import partial
 from pwdata.fairchem.datasets.ase_datasets import AseDBDataset
 from pwdata.utils.format_change import to_numpy_array, to_integer, to_float
+from ase.db.row import AtomsRow
+from ase.atoms import Atoms
+from pwdata.convert_files import search_by_format
+from pwdata.utils.constant import FORMAT, get_atomic_name_from_number, check_atom_type_name
 
-class META(object):
+class META_OMol(object):
     def __init__(self, files: list[str], atom_names: list[str] = None, query: str = None, cpu_nums: int=None):
         self.image_list:list[Image] = []
         self.load_files_cpus(files, atom_names, query, cpu_nums)
@@ -109,32 +113,57 @@ def query_fun(row, elements):
         return True
     return sorted(set(row.symbols)) == elements
 
-def to_image(Atoms):
-    image = Image()
-    image.formula = Atoms.formula
-    image.pbc = to_numpy_array(Atoms.pbc)
-    image.atom_nums = Atoms.natoms
-    type_nums_dict = Counter(Atoms.numbers)
-    image.atom_type = to_numpy_array(list(type_nums_dict.keys()))
-    image.atom_type_num = to_numpy_array(list(type_nums_dict.values()))
-    image.atom_types_image = to_numpy_array(Atoms.numbers)
-    image.lattice = to_numpy_array(Atoms.cell).reshape(3, 3)
-    image.position = to_numpy_array(Atoms.positions)
-    image.cartesian = True
-    image.force = to_numpy_array(Atoms.forces)
-    image.Ep = to_float(Atoms.energy)
+def to_image(Atoms:AtomsRow):
+    image = Image(Atoms)
+    # image.formula = Atoms.formula
+    # image.pbc = to_numpy_array(Atoms.pbc)
+    # image.atom_nums = Atoms.natoms
+    # type_nums_dict = Counter(Atoms.numbers)
+    # image.atom_type = to_numpy_array(list(type_nums_dict.keys()))
+    # image.atom_type_num = to_numpy_array(list(type_nums_dict.values()))
+    # image.atom_types_image = to_numpy_array(Atoms.numbers)
+    # image.lattice = to_numpy_array(Atoms.cell).reshape(3, 3)
+    # image.position = to_numpy_array(Atoms.positions)
+    # image.cartesian = True
+    # image.force = to_numpy_array(Atoms.forces)
+    # image.Ep = to_float(Atoms.energy)
 
     # 计算 Atomic-Energy
     # atomic_energy, _, _, _ = np.linalg.lstsq([image.atom_type_num], np.array([image.Ep]), rcond=1e-3)
     # atomic_energy = np.repeat(atomic_energy, image.atom_type_num)
     # image.atomic_energy = atomic_energy.tolist()
-
-    vol = Atoms.volume
-    virial = (-np.array(Atoms.stress) * vol)
-    image.virial = np.array([
-        [virial[0], virial[5], virial[4]],
-        [virial[5], virial[1], virial[3]],
-        [virial[4], virial[3], virial[2]]
-    ])
-    image.format = 'metadata'
+    # vol = Atoms.volume() # volume is 0 in Molecules
+    # virial = (-np.array(Atoms.stress) * vol)
+    # image.virial = np.array([
+    #     [virial[0], virial[5], virial[4]],
+    #     [virial[5], virial[1], virial[3]],
+    #     [virial[4], virial[3], virial[2]]
+    # ])
+    image.format = 'meta/omol'
     return image
+
+def read_oMol_data(file_list:list[str], atom_names:list[str]=None, query:str=None, cpu_nums:int=1):
+    lmdb_list = []
+    for file in file_list:
+        _tmp = search_by_format(file, "meta")
+        if len(_tmp) > 0:
+            lmdb_list.extend(_tmp)
+    
+    if len(lmdb_list) < 1:
+        print("The lmdb files in {} is not exists!".format(" ".join(file_list)))
+        return
+    atom_names = None #["C", "H"]
+    query = None
+    cpu_nums = 1
+
+    if atom_names is not None:
+        try:
+            atom_names = get_atomic_name_from_number(atom_names)
+        except Exception as e:
+            if check_atom_type_name(atom_names):
+                pass
+            else:
+                raise Exception("The input '-t' or '--atom_types': '{}' is not valid, please check the input".format(" ".join(atom_names)))
+
+    image_list = META_OMol(lmdb_list, atom_names, query, cpu_nums)
+    return image_list

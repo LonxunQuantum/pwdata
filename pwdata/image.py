@@ -56,6 +56,7 @@ class Image(object):
         self.cartesian = cartesian if cartesian is not None else False
         self.pbc = to_numpy_array(pbc) if pbc is not None else np.zeros(3, bool)
         self.arrays = self.prim_dict() # here, position will be convert to cartesian coordinates
+        self.data = {}
     
     def sort_by_atomtype(self):
         sort_indices = np.argsort(self.atom_types_image)
@@ -256,10 +257,10 @@ class Image(object):
         return len(self.arrays['position'])
 
 '''follow functions shoule be merged into the Image class later!!!'''
-def elements_to_order(atom_names, atom_types_image, atom_nums):
+def elements_to_order(atom_names, atom_types_image, atom_nums, is_atom_type_name=False):
     """
     Replaces the atom types's order (from 1) to the order of the elements in the atom_names list.
-
+    
     Args:
         atom_names (list): List of atom names.
         atom_types_image (list): List of atom types.
@@ -268,6 +269,7 @@ def elements_to_order(atom_names, atom_types_image, atom_nums):
     Example:
         >>> atom_names = ['C', 'N']
         >>> atom_types_image = [1, 1, 1, 1, 1, ... , 2, 2, 2, 2, 2, ... , 2]
+        >>> if is_atom_type_name is Ture, the atom_types_image = ["C", "C", "C", "C", "C", ... , "N", "N", "N", "N", "N", ... , "N"]
         >>> atom_nums = 56
         >>> elements_to_order(atom_names, atom_types_image, atom_nums)
         [6, 6, 6, 6, 6, ... , 7, 7, 7, 7, 7, ... , 7]
@@ -279,9 +281,13 @@ def elements_to_order(atom_names, atom_types_image, atom_nums):
     #     for ii in range(atom_nums):
     #         if name in elements and atom_types_image[ii] == idx+1:
     #             atom_types_image[ii] = elements.index(name)
-    type_mapping = {idx+1: elements.index(name) for idx, name in enumerate(atom_names)}
-    atom_types_image = [type_mapping[atom_type] for atom_type in atom_types_image]
-    return atom_types_image
+    if is_atom_type_name:
+        atom_types_image = [elements.index(name) for name in atom_types_image]
+        return atom_types_image
+    else:
+        type_mapping = {idx+1: elements.index(name) for idx, name in enumerate(atom_names)}
+        atom_types_image = [type_mapping[atom_type] for atom_type in atom_types_image]
+        return atom_types_image
 
 def frac2cart(position, lattice):
     """

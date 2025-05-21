@@ -23,7 +23,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # from pwdata.build.write_struc import write_config, write_vasp, write_lammps
 import argparse
 from pwdata.convert_files import do_scale_cell, do_super_cell, do_perturb, do_convert_config, do_convert_images, do_count_images
-from pwdata.utils.constant import FORMAT, get_atomic_name_from_number
+from pwdata.utils.constant import FORMAT, get_atomic_name_from_number, check_atom_type_name
 from pwdata.check_envs import print_cmd, comm_info
 
 # from pwdata.open_data.meta_data import get_meta_data
@@ -238,10 +238,16 @@ def run_convert_configs(cmd_list:list[str]):
     parser.add_argument('-t', '--atom_types',    type=str, required=False, nargs='+', help="For 'lammps/lmp', 'lammps/dump': the atom type list of lammps lmp/dump file, the order is same as lammps dump file.\nFor meta data: Query structures that only exist for that element type", default=None)
     
     args = parser.parse_args(cmd_list)
-    try:
-        atom_types = get_atomic_name_from_number(args.atom_types)
-    except Exception as e:
-        atom_types = args.atom_types
+    if args.atom_types is None:
+        atom_types = None
+    else:
+        try:
+            atom_types = get_atomic_name_from_number(args.atom_types)
+        except Exception as e:
+            if check_atom_type_name(args.atom_types):
+                atom_types = args.atom_types
+            else:
+                raise Exception("The input '-t' or '--atom_types': '{}' is not valid, please check the input".format(" ".join(args.atom_types)))
     input_list = []
     for _input in args.input:
         if os.path.isfile(_input) and "json" in os.path.basename(_input) and os.path.exists(_input):
