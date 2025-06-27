@@ -5,7 +5,7 @@ if __name__ == "__main__":
         "/data/home/wuxingxing/codespace/pwdata_dev/examples/omol_data"
     ]
 
-    atom_names = None #["C", "H"]
+    atom_names = ["C", "H"]
     query = None
     cpu_nums = 3
 

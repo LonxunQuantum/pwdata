@@ -129,12 +129,13 @@ def to_image(Atoms):
     # atomic_energy = np.repeat(atomic_energy, image.atom_type_num)
     # image.atomic_energy = atomic_energy.tolist()
 
-    vol = Atoms.volume
-    virial = (-np.array(Atoms.stress) * vol)
-    image.virial = np.array([
-        [virial[0], virial[5], virial[4]],
-        [virial[5], virial[1], virial[3]],
-        [virial[4], virial[3], virial[2]]
-    ])
+    if hasattr(Atoms, 'virial') is False and hasattr(Atoms, 'stress'):
+        vol = Atoms.volume
+        virial = (-np.array(Atoms.stress) * vol)
+        image.virial = np.array([
+            [virial[0], virial[5], virial[4]],
+            [virial[5], virial[1], virial[3]],
+            [virial[4], virial[3], virial[2]]
+        ])
     image.format = 'metadata'
     return image
