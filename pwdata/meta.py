@@ -52,24 +52,25 @@ class META(object):
             cpu_nums = min(cpu_nums, multiprocessing.cpu_count())
         if isinstance(input, str):
             input = [input]
+        atom_lists = []
         # single cpu debug
-        # atom_lists = []
-        # for i, _ in enumerate(input):
-        #     print(i)
-        #     _atom_lists = load_and_query_db(_, atom_types, query, filter_with_elements)
-        #     for _ in _atom_lists:
-        #         print(_.formula)
-        #     atom_lists.extend(_atom_lists)
-        # 使用多进程并行加载和查询数据库
-        with ProcessPoolExecutor(max_workers=cpu_nums) as executor:
-            futures = []
-            for db_address in input:
-                futures.append(executor.submit(load_and_query_db, db_address, atom_types, query, filter_with_elements))
-            
-            # 收集查询结果
-            atom_lists = []
-            for future in as_completed(futures):
-                atom_lists.append(future.result())
+        if cpu_nums == 1:
+            for i, _ in enumerate(input):
+                _atom_lists = load_and_query_db(_, atom_types, query, filter_with_elements)
+                # for _ in _atom_lists:
+                #     print(_.formula)
+                atom_lists.append(_atom_lists)
+        else:
+            # 使用多进程并行加载和查询数据库
+            with ProcessPoolExecutor(max_workers=cpu_nums) as executor:
+                futures = []
+                for db_address in input:
+                    futures.append(executor.submit(load_and_query_db, db_address, atom_types, query, filter_with_elements))
+                
+                # 收集查询结果
+                atom_lists = []
+                for future in as_completed(futures):
+                    atom_lists.append(future.result())
 
         # 处理所有结果
         for atom_list in atom_lists:
@@ -123,7 +124,6 @@ def to_image(Atoms):
     image.cartesian = True
     image.force = to_numpy_array(Atoms.forces)
     image.Ep = to_float(Atoms.energy)
-
     # 计算 Atomic-Energy
     # atomic_energy, _, _, _ = np.linalg.lstsq([image.atom_type_num], np.array([image.Ep]), rcond=1e-3)
     # atomic_energy = np.repeat(atomic_energy, image.atom_type_num)
@@ -137,5 +137,6 @@ def to_image(Atoms):
             [virial[5], virial[1], virial[3]],
             [virial[4], virial[3], virial[2]]
         ])
+        # print(image.virial)
     image.format = 'metadata'
     return image

@@ -4,7 +4,7 @@ from tqdm import tqdm
 from collections import Counter
 from pwdata.image import Image
 from pwdata.calculators.unitconvert_lmps import convert
-from pwdata.calculators.const import ELEMENTMASSTABLE
+from pwdata.calculators.const import ELEMENTMASSTABLE, ELEMENTTABLE
 from pwdata.utils.format_change import to_numpy_array, to_integer, to_float
 class LMP(object):
     def __init__(self, lmp_file, atom_names: list[str] = None, units: str = 'metal', style: str = 'atomic', sort_by_id: bool = True) -> None:
@@ -323,6 +323,8 @@ class LMP(object):
             ids[ind] = id
             # by type
             types[ind] = type
+            if self.atom_names is not None:
+                atom_types_image[ind] = ELEMENTTABLE[self.atom_names[type - 1]]
             if len(atom_names) == 0:
                 atom_types_image[ind] = type
             else:

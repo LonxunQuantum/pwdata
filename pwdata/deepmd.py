@@ -52,15 +52,16 @@ class DPNPY(object):
     def load_npy(self, npy_files, atom_nums):
         virial = None
         for npy_file in tqdm(npy_files, desc="Loading data"):
-            if "box" in npy_file:
+            npy_file_name = os.path.basename(npy_file)
+            if "box" in npy_file_name:
                 box = np.load(npy_file).reshape(-1, 3, 3).astype(np.float64)
-            elif "coord" in npy_file:
+            elif "coord" in npy_file_name:
                 coord = np.load(npy_file).reshape(-1, atom_nums, 3)
-            elif "energy" in npy_file:
+            elif "energy" in npy_file_name:
                 energy = np.load(npy_file)
-            elif "force" in npy_file:
+            elif "force" in npy_file_name:
                 force = np.load(npy_file).reshape(-1, atom_nums, 3)
-            elif "virial" in npy_file:
+            elif "virial" in npy_file_name:
                 virial = np.load(npy_file).reshape(-1, 3, 3)
 
         image_nums = len(box)

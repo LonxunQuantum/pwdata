@@ -38,21 +38,22 @@ class PWNPY(object):
         virial = None
         coord = None
         for npy_file in npy_files:
-            if "atom_type" in npy_file:
+            npy_file_name = os.path.basename(npy_file)
+            if "atom_type.npy" in npy_file_name:
                 atom_type = to_numpy_array(np.load(npy_file).squeeze())
-            elif "ei" in npy_file:
+            elif "ei.npy" in npy_file_name:
                 atomic_energy = np.load(npy_file) if atomic_energy is None else np.concatenate((atomic_energy, np.load(npy_file)))
-            elif "energies" in npy_file:
+            elif "energies.npy" in npy_file_name:
                 Ep = np.load(npy_file) if Ep is None else np.concatenate((Ep, np.load(npy_file)))
-            elif "forces" in npy_file:
+            elif "forces.npy" in npy_file_name:
                 force = np.load(npy_file) if force is None else np.concatenate((force, np.load(npy_file)))
-            elif "image_type" in npy_file:
+            elif "image_type.npy" in npy_file_name:
                 atom_types_image = np.load(npy_file).squeeze()
-            elif "lattice" in npy_file:
+            elif "lattice.npy" in npy_file_name:
                 lattice = np.load(npy_file) if lattice is None else np.concatenate((lattice, np.load(npy_file)))
-            elif "virials" in npy_file:
+            elif "virials.npy" in npy_file_name:
                 virial = np.load(npy_file) if virial is None else np.concatenate((virial, np.load(npy_file)))
-            elif "position" in npy_file:
+            elif "position.npy" in npy_file_name:
                 coord = np.load(npy_file) if coord is None else np.concatenate((coord, np.load(npy_file)))
 
         image_nums = len(Ep)

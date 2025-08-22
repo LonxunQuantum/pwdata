@@ -122,9 +122,9 @@ def cvtbamboo(pt_dir, save_dir, prefix):
 
 
 if __name__=="__main__":
-    pt_dir="/share/public/PWMLFF_test_data/bamboo/train"
-    save_dir="/share/public/PWMLFF_test_data/bamboo/train_aselmdb"
+    pt_dir="/share/public/PWMLFF_test_data/bamboo/mini"
+    save_dir="/share/public/PWMLFF_test_data/bamboo/mini_aselmdb"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    prefix = "bamboo-train"
+    prefix = "bamboo-mini"
     cvtbamboo(pt_dir, save_dir, prefix)
