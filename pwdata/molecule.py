@@ -33,27 +33,27 @@ class Molecule():
         """
         # from atoms_row.data which is dict
         self.data                   = atoms_row.data
-        self.source                 = atoms_row.data['source']
-        self.reference_source       = atoms_row.data['reference_source']
-        self.data_id                = atoms_row.data['data_id']
-        self.charge                 = atoms_row.data['charge']
-        self.spin                   = atoms_row.data['spin']
-        self.num_atoms              = atoms_row.data['num_atoms']
-        self.num_electrons          = atoms_row.data['num_electrons']
-        self.num_ecp_electrons      = atoms_row.data['num_ecp_electrons']
-        self.n_scf_steps            = atoms_row.data['n_scf_steps']
-        self.n_basis                = atoms_row.data['n_basis']
-        self.unrestricted           = atoms_row.data['unrestricted']
-        self.nl_energy              = atoms_row.data['nl_energy']
-        self.integrated_densities   = atoms_row.data['integrated_densities']
-        self.homo_energy            = atoms_row.data['homo_energy']
-        self.homo_lumo_gap          = atoms_row.data['homo_lumo_gap']
-        self.s_squared              = atoms_row.data['s_squared']
-        self.s_squared_dev          = atoms_row.data['s_squared_dev']
-        self.warnings               = atoms_row.data['warnings']
-        self.mulliken_charges       = atoms_row.data['mulliken_charges']
-        self.lowdin_charges         = atoms_row.data['lowdin_charges']
-        self.composition            = atoms_row.data['composition']
+        self.source                 = atoms_row.data['source'] if "source" in atoms_row.data.keys() else None
+        self.reference_source       = atoms_row.data['reference_source'] if "reference_source" in atoms_row.data.keys() else None
+        self.data_id                = atoms_row.data['data_id'] if "data_id" in atoms_row.data.keys() else None
+        self.charge                 = atoms_row.data['charge'] if "charge" in atoms_row.data.keys() else None
+        self.spin                   = atoms_row.data['spin'] if "spin" in atoms_row.data.keys() else None
+        self.num_atoms              = atoms_row.data['num_atoms'] if "num_atoms" in atoms_row.data.keys() else None
+        self.num_electrons          = atoms_row.data['num_electrons'] if "num_electrons" in atoms_row.data.keys() else None
+        self.num_ecp_electrons      = atoms_row.data['num_ecp_electrons'] if "num_ecp_electrons" in atoms_row.data.keys() else None
+        self.n_scf_steps            = atoms_row.data['n_scf_steps'] if "n_scf_steps" in atoms_row.data.keys() else None
+        self.n_basis                = atoms_row.data['n_basis'] if "n_basis" in atoms_row.data.keys() else None
+        self.unrestricted           = atoms_row.data['unrestricted'] if "unrestricted" in atoms_row.data.keys() else None
+        self.nl_energy              = atoms_row.data['nl_energy'] if "nl_energy" in atoms_row.data.keys() else None
+        self.integrated_densities   = atoms_row.data['integrated_densities'] if "integrated_densities" in atoms_row.data.keys() else None
+        self.homo_energy            = atoms_row.data['homo_energy'] if "homo_energy" in atoms_row.data.keys() else None
+        self.homo_lumo_gap          = atoms_row.data['homo_lumo_gap'] if "homo_lumo_gap" in atoms_row.data.keys() else None
+        self.s_squared              = atoms_row.data['s_squared'] if "s_squared" in atoms_row.data.keys() else None
+        self.s_squared_dev          = atoms_row.data['s_squared_dev'] if "s_squared_dev" in atoms_row.data.keys() else None
+        self.warnings               = atoms_row.data['warnings'] if "warnings" in atoms_row.data.keys() else None
+        self.mulliken_charges       = atoms_row.data['mulliken_charges'] if "mulliken_charges" in atoms_row.data.keys() else None
+        self.lowdin_charges         = atoms_row.data['lowdin_charges'] if "lowdin_charges" in atoms_row.data.keys() else None
+        self.composition            = atoms_row.data['composition'] if "composition" in atoms_row.data.keys() else None
 
         # for search param from atoms_row
         self.calculator             = atoms_row.calculator

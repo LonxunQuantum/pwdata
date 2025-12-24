@@ -15,6 +15,9 @@ def cmd_infos():
     info += "\tpwdata super_cell -i input_file -f input_file_format -n output_format_name -o output_format\n"
     info += "\tYou can also use 'pwdata super_cell -h' to obtain a more detailed parameter list\n\n"
     
+    info += "surf or surface: Under Development (2025.12.24)\n"
+    info += "\n"
+
     info += "perturb:\n"
     info += "\tDisturb the atomic positions and unit cells of the structure, the command example:\n"
     info += "\tpwdata perturb -e 0.01 -d 0.04 -n 20 -i LiSi_POSCAR -f vasp/poscar -s perturb_lammps -o lammps/lmp -c\n\n"

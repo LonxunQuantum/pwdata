@@ -185,7 +185,7 @@ class Config(object):
             elif format.lower() == "vasp/outcar":
                 image = OUTCAR(data_path).image_list[index]
             elif format.lower() == "extxyz":
-                image = EXTXYZ(data_path, index).image_list[index]
+                image = EXTXYZ(data_path).image_list[index]
             elif format.lower() == "vasp/xml":
                 image = None
             elif format.lower() == 'cp2k/md':

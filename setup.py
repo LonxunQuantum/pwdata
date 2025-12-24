@@ -3,9 +3,15 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+# pip3 install setuptools wheel twine
+
+# rm dist/ -r
+# python3 setup.py sdist bdist_wheel
+# twine upload dist/* --verbose
+
 setuptools.setup(
     name="pwdata", 
-    version="0.5.4",
+    version="0.5.6",
     author="LonxunQuantum",
     author_email="lonxun@pwmat.com",
     description="pwdata is a data pre-processing tool for MatPL, which can be used to extract features and labels. It also provides convenient interfaces for data conversion between different software.",

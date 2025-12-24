@@ -2,6 +2,7 @@ import re
 from tqdm import tqdm
 from collections import Counter
 from pwdata.image import Image
+from pwdata.utils.format_change import to_numpy_array, to_integer, to_float
 
 class CONFIG(object):
     def __init__(self, config_file, pbc = None) -> None:
@@ -29,10 +30,10 @@ class CONFIG(object):
                 image.atom_nums = atom_nums
             elif "position" in ii.lower():
                 position = self.parse_position(config_contents[idx+1:idx+image.atom_nums+1])
-                image.position = position["position"]
-                image.atom_type = position["atom_type"]
-                image.atom_type_num = position["atom_type_num"]
-                image.atom_types_image = position["atom_types_image"]
+                image.position = to_numpy_array(position["position"])
+                image.atom_type = to_numpy_array(position["atom_type"])
+                image.atom_type_num = to_numpy_array(position["atom_type_num"])
+                image.atom_types_image = to_numpy_array(position["atom_types_image"])
         image.image_nums = len(self.image_list)
         print("Load data %s successfully!" % config_file)
     

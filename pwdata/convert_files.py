@@ -2,6 +2,7 @@ import os
 import sys
 import glob
 import numpy as np
+import random
 from pwdata.config import Config
 from pwdata.build.supercells import make_supercell
 from pwdata.pertub.perturbation import perturb_structure
@@ -9,6 +10,7 @@ from pwdata.pertub.scale import scale_cell
 from pwdata.utils.constant import FORMAT, ELEMENTTABLE, get_atomic_name_from_number
 from pwdata.image import Image
 from collections import Counter
+from ase.build import general_surface
 from ase.db.row import AtomsRow
 from pwdata.fairchem.datasets.ase_datasets import AseDBDataset
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -56,6 +58,85 @@ def do_scale_cell(input_file:str,
             direct = direct,
             sort = True)
     return os.path.abspath(savename)
+
+def do_surface(input_file:str, 
+                    input_format:str = None, 
+                    atom_types:list[str] = None,
+                    savename:str = None, 
+                    output_format:str = None, 
+                    supercell_matrix:list[int] = None,
+                    direct:bool = True,
+                    cartesian:bool=True,
+                    pbc:list =[1, 1, 1],
+                    wrap=True, 
+                    tol=1e-5,
+                    millers = None,
+                    layer_num = None,
+                    z_min = None,
+                    vacuum_max = None,
+                    vacuum_min = None,
+                    vacuum_resol = None,
+                    vacuum_numb = None,
+                    mid_point = None,
+                    cell_type:str=None,
+                    lattice:float=None
+                    ): # True: save as fractional coordinates, False for cartesian coordinates
+    # for pwamt/movement movement or MLMD.OUT files
+    from pymatgen.core import Element, Structure
+    from pymatgen.io.ase import AseAtomsAdaptor
+    max_layer_numb = 50
+    random.seed(2025)
+    prefix_random=random.randint(1000000, 9999999)
+    tmp_file = f"{prefix_random}-surf-POSCAR"
+    image = Config(data_path=input_file, format=input_format, atom_names=atom_types)
+    image.to(data_path = "./",
+            data_name = tmp_file,
+            format = "vasp/poscar",
+            direct = direct
+            )
+    # for vasp poscar
+    ss = Structure.from_file(tmp_file)
+    os.remove(tmp_file)
+    res_path = []
+    for miller in millers:
+        miller_str = ""
+        for ii in miller:
+            miller_str += str(ii)
+        tmp_file = f"{prefix_random}-surf-{miller_str}-POSCAR"
+        # slabgen = SlabGenerator(ss, miller, z_min, 1e-3)
+        if layer_num is not None:
+            slab = general_surface.surface(
+                ss, indices=miller, vacuum=vacuum_min, layers=layer_num
+            )
+        else:
+            # build slab according to z_min value
+            for layer_numb in range(1, max_layer_numb + 1):
+                slab = general_surface.surface(
+                    ss, indices=miller, vacuum=vacuum_min, layers=layer_numb
+                )
+                if slab.cell.lengths()[-1] >= z_min:
+                    break
+                if layer_numb == max_layer_numb:
+                    raise RuntimeError("can't build the required slab")
+        slab.write(tmp_file, vasp5=True)
+        image = Config(data_path=tmp_file, format="vasp/poscar", atom_names=atom_types)
+        os.remove(tmp_file)
+        if supercell_matrix is not None:
+            scaled_structs = make_supercell(image, supercell_matrix, pbc=pbc, wrap=wrap, tol=tol)
+        else:
+            scaled_structs = image
+        if output_format is None:
+            output_format = FORMAT.pwmat_config if image.format == FORMAT.cp2k_scf else image.format
+        if savename is None:
+            savename = FORMAT.get_filename_by_format(image.format)
+        data_name = f"surf-{miller}-super-{os.path.basename(savename)}" if supercell_matrix is not None else f"surf-{miller}-{os.path.basename(savename)}"
+        scaled_structs.to(data_path = os.path.dirname(os.path.abspath(savename)),
+                          data_name = data_name,
+                          format    = output_format,
+                          direct = direct,
+                          sort = True)
+        res_path.append(os.path.abspath(data_name))
+    return res_path
 
 def do_super_cell(input_file:str, 
                     input_format:str = None, 
@@ -127,7 +208,7 @@ def do_convert_images(
     merge:bool=True
 ):
     data_files = search_images(input, input_format)
-    image_data = load_files(data_files, input_format, atom_types=atom_types, query=query, cpu_nums=cpu_nums)
+    image_data = load_files(data_files, input_format, atom_types=atom_types, query=query, cpu_nums=cpu_nums, index=gap)
     save_images(savepath, image_data, output_format, data_shuffle, merge)
 
 def do_count_images(
@@ -272,7 +353,7 @@ def search_by_format(workDir, format):
     return data_path[format]
 
 
-def load_files(input_dict:dict, input_format:str=None, atom_types:list[str]=None, query:str=None, cpu_nums=None):
+def load_files(input_dict:dict, input_format:str=None, atom_types:list[str]=None, query:str=None, cpu_nums=None, index=":"):
     image_data = None
     if input_format is not None:
         if input_format == FORMAT.meta:
@@ -281,31 +362,31 @@ def load_files(input_dict:dict, input_format:str=None, atom_types:list[str]=None
             metadatas = [input_dict[FORMAT.meta][i:i + chunk_size] for i in range(0, lmdb_nums, chunk_size)]
             for idx, metapaths in enumerate(tqdm(metadatas, total=lmdb_nums // chunk_size)):
                 if image_data is None:
-                    image_data = Config(input_format, metapaths, atom_names=atom_types, query=query, cpu_nums=cpu_nums)
+                    image_data = Config(input_format, metapaths, atom_names=atom_types, query=query, cpu_nums=cpu_nums, index=index)
                     if not isinstance(image_data.images, list): # for the first pwmlff/npy dir only has one picture
                         image_data.images = [image_data.images]
                 else:
-                    tmp_image_data = Config(input_format, metapaths, atom_names=atom_types, query=query, cpu_nums=cpu_nums)
+                    tmp_image_data = Config(input_format, metapaths, atom_names=atom_types, query=query, cpu_nums=cpu_nums, index=index)
                     image_data.images.extend(tmp_image_data.images)
                 # print("There are a total of {} aselmdb, and the current progress has been loaded {} %".format(lmdb_nums, np.round(idx*chunk_size/lmdb_nums, 2)))
         else:
             if len(input_dict[FORMAT.traj]) > 0:# the input is traj files
                 for data_path in  tqdm(input_dict[FORMAT.traj], total=len(input_dict[FORMAT.traj])):
                     if image_data is None:
-                        image_data = Config(input_format, data_path, atom_names=atom_types, query=query, cpu_nums=cpu_nums)
+                        image_data = Config(input_format, data_path, atom_names=atom_types, query=query, cpu_nums=cpu_nums, index=index)
                         if not isinstance(image_data.images, list): # for the first pwmlff/npy dir only has one picture
                             image_data.images = [image_data.images]
                     else:
-                        tmp_image_data = Config(input_format, data_path, atom_names=atom_types, query=query, cpu_nums=cpu_nums)
+                        tmp_image_data = Config(input_format, data_path, atom_names=atom_types, query=query, cpu_nums=cpu_nums, index=index)
                         image_data.images.extend(tmp_image_data.images)
             else:
                 for data_path in tqdm(input_dict[input_format], total=len(input_dict[input_format])): 
                     if image_data is None:
-                        image_data = Config(input_format, data_path, atom_names=atom_types, query=query, cpu_nums=cpu_nums)
+                        image_data = Config(input_format, data_path, atom_names=atom_types, query=query, cpu_nums=cpu_nums, index=index)
                         if not isinstance(image_data.images, list): # for the first pwmlff/npy dir only has one picture
                             image_data.images = [image_data.images]
                     else:
-                        tmp_image_data = Config(input_format, data_path, atom_names=atom_types, query=query, cpu_nums=cpu_nums)
+                        tmp_image_data = Config(input_format, data_path, atom_names=atom_types, query=query, cpu_nums=cpu_nums, index=index)
                         image_data.images.extend(tmp_image_data.images)
         return image_data
 

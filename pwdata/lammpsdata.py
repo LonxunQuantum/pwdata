@@ -323,12 +323,12 @@ class LMP(object):
             ids[ind] = id
             # by type
             types[ind] = type
-            if self.atom_names is not None:
-                atom_types_image[ind] = ELEMENTTABLE[self.atom_names[type - 1]]
-            if len(atom_names) == 0:
-                atom_types_image[ind] = type
-            else:
+            if len(atom_names) > 0: # use lammps.config atom type
                 atom_types_image[ind] = atom_names[type - 1]
+            elif self.atom_names is not None and len(self.atom_names) > 0: # use input atom type
+                atom_types_image[ind] = ELEMENTTABLE[self.atom_names[type - 1]]
+            else:
+                atom_types_image[ind] = type
             if masses is not None:
                 masses[ind] = mass_in[type]
 

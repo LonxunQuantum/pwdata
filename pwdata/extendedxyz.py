@@ -8,7 +8,8 @@ from math import ceil
 from collections import Counter
 
 class EXTXYZ(object):
-    def __init__(self, xyz_file, index) -> None:
+    # index is not used in this reading
+    def __init__(self, xyz_file, index=None) -> None:
         self.image_list:list[Image] = []
         self.number_pattern = re.compile(r"[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?")
         self.load_xyz_file(xyz_file, index)
@@ -88,10 +89,12 @@ def read_structures(
         List[Structure]: A list of structures read from the file.
     """
     image_list = []
+    index_cout = 0
     with open(file_name, "r") as file:
         
         while True:
             num_lines_per_frame = file.readline().strip()
+            index_cout += 1
             if not num_lines_per_frame:
                 break
             num_lines_per_frame = int(num_lines_per_frame)
@@ -100,11 +103,12 @@ def read_structures(
             ), "Number of lines per frame should be a positive integer"
 
             frames = [file.readline().strip()]
-
+            index_cout += 1
             for _ in range(num_lines_per_frame):
                 line = file.readline().strip()
                 if line:
                     frames.append(line)
+            index_cout += num_lines_per_frame
             image = read_one_structures_from_lines(frames)
             image_list.append(image)
     assert len(image_list) > 0, "extxyz file {} parsing failed".format(file_name)

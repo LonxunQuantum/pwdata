@@ -22,7 +22,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # from pwdata.datasets_saver import save_to_dataset, get_pw, save_to_raw, save_to_npy
 # from pwdata.build.write_struc import write_config, write_vasp, write_lammps
 import argparse
-from pwdata.convert_files import do_scale_cell, do_super_cell, do_perturb, do_convert_config, do_convert_images, do_count_images
+from pwdata.convert_files import do_scale_cell, do_super_cell, do_perturb, do_convert_config, do_convert_images, do_count_images, do_surface
 from pwdata.utils.constant import FORMAT, get_atomic_name_from_number, check_atom_type_name
 from pwdata.check_envs import print_cmd, comm_info
 
@@ -80,6 +80,11 @@ def main(cmd_list:list=None):
         run_scale_cell(cmd_list[2:])
     elif "super_cell".upper() == cmd_list[1].upper() or "super".upper() == cmd_list[1].upper():
         run_super_cell(cmd_list[2:])
+    elif "surface_config".upper() == cmd_list[1].upper() or "surf_config".upper() == cmd_list[1].upper()  or "surf".upper() == cmd_list[1].upper():
+        run_surf_from_config(cmd_list[2:])
+    elif "surface_cell".upper() == cmd_list[1].upper() or "surf_cell".upper() == cmd_list[1].upper():
+        run_surf_from_cell(cmd_list[2:])
+
     elif "perturb".upper() == cmd_list[1].upper():
         run_pertub(cmd_list[2:])
     elif "convert_config".upper() == cmd_list[1].upper() or "cvt_config".upper() == cmd_list[1].upper():
@@ -161,6 +166,110 @@ def run_super_cell(cmd_list:list[str]):
     do_super_cell(args.input, args.input_format, args.atom_types, args.savename, args.output_format, args.supercell_matrix, args.cartesian is False, pbc=args.periodicity, tol=args.tolerance)
     print("supercell the config done!")
 
+def run_surf_from_config(cmd_list:list[str]): # Creating surface structures
+    parser = argparse.ArgumentParser(description='Construct a surface structures based on the input original structure!')
+    parser.add_argument('-m', '--supercell_matrix', type=int, nargs='+',  required=False, default=None, help="Supercell matrix, 3 or 9 values, for example, '2 0 0 0 2 0 0 0 1' or '2 2 1' represents that the supercell is 2x2 in the x and y directions")
+    parser.add_argument('-i', '--input',         type=str, required=True, help='The input file path')
+    parser.add_argument('-f', '--input_format',  type=str, required=False, default=None, help="The input file format, the supported format as ['pwmat/config','vasp/poscar', 'lammps/lmp', 'cp2k/scf']")
+    parser.add_argument('-s', '--savename',      type=str, required=False, default=None, help="The output file name, if not provided, the 'atom.config' for pwmat/config, 'POSCAR' for vasp/poscar, 'lammps.lmp' for lammps/lmp will be used")
+    parser.add_argument('-o', '--output_format', type=str, required=False, default=None, help="the output file format, only support the format ['pwmat/config','vasp/poscar', 'lammps/lmp'], if not provided, the input format be used. \nNote: that outputting cp2k/scf format is not supported. In this case, the default will be adjusted to pwmat atom.config")
+    parser.add_argument('-c', '--cartesian',     action='store_true', help="If '-c' is set, the cartesian coordinates will be used, otherwise the fractional coordinates will be used.")
+    parser.add_argument('-p', '--periodicity',   type=int, nargs='+', required=False, help="'-p 1 1 1' indicates that the system is periodic in the x, y, and z directions. The default value is [1,1,1]", default=[1,1,1])
+    parser.add_argument('-l', '--tolerance',     type=float, required=False, help="Tolerance of fractional coordinates. The default is 1e-5. Prevent slight negative coordinates from being mapped into the simulation box.", default=1e-5)
+    parser.add_argument('-t', '--atom_types',    type=str, nargs='+',required=False,  help="The atom type list of 'lammps/lmp' or 'lammps/dump' input file, the order is same as input file", default=None)
+    parser.add_argument('-e', '--miller',        type=int, nargs='+',required=True,  help="The miller indices, the input parameter should be multiple triplets. For example: '-m h k l', the output or '-m h1 k1 l1 h2 k2 l2 ...'")
+    parser.add_argument('-n', '--layer_num',     type=int, required=False,   default=None, help="The number of atom layers that make up the slab structure.")
+    parser.add_argument('-z', '--z_min',         type=float, required=False, default=None, help="The thickness of the slab without vacuum (Angstrom). If layer_num is set, z_min will be ignored.")
+    parser.add_argument('-v', '--vacuum_max',    type=float, required=False, default=None, help="The maximal thickness of vacuum (Angstrom).")
+    parser.add_argument('-u', '--vacuum_min',    type=float, required=False, default=None, help="The minimal thickness of vacuum (Angstrom). Default value is 2 times atomic radius.")
+    parser.add_argument('-r', '--vacuum_resol',  type=float, required=False, default=None, help="Interval of thickness of vacuum. If size of vacuum_resol is 1, the interval is fixed to its value. If size of vacuum_resol is 2, the interval is vacuum_resol[0] before mid_point, otherwise vacuum_resol[1] after mid_point.")
+    parser.add_argument('-b', '--vacuum_numb',   type=int, required=False, default=None, help="The total number of vacuum layers Necessary if vacuum_resol is empty.")
+    parser.add_argument('-d', '--mid_point',     type=float, required=False, default=None, help="The mid point separating head region and tail region. Necessary if the size of vacuum_resol is 2 or 0.")
+    
+    args = parser.parse_args(cmd_list)
+    if args.supercell_matrix is not None:
+        assert len(args.supercell_matrix) == 3 or len(args.supercell_matrix) == 9, "The supercell matrix must be 3 or 9 values"
+        if len(args.supercell_matrix) == 3:
+            args.supercell_matrix = np.diag(args.supercell_matrix)
+            if args.supercell_matrix[0][2] != 0 or args.supercell_matrix[1][2] != 0 or \
+                (args.supercell_matrix[2][0] != 0 and args.supercell_matrix[2][1] != 0 and args.supercell_matrix[2][2] != 1) :
+                    raise Exception("Error! The input parameter supercell_matrix value of the surface system is incorrectly verified. The Z direction should be 1. For example:[1,2,1], [2,2,0,1,2,0,0,0,1], or [[2,2,0],[1,2,0],[0,0,1]]!") 
+    
+    if len(args.miller) % 3 != 0:
+        raise Exception("Input error! : The input parameter should be triple. For example: -e 1 1 0 or ")
+    args.miller = np.array(args.miller).reshape(-1, 3).tolist()
+    res = do_surface(input_file = args.input, 
+                input_format = args.input_format, 
+                atom_types = args.atom_types, 
+                savename = args.savename, 
+                output_format = args.output_format, 
+                supercell_matrix = args.supercell_matrix, 
+                cartesian = args.cartesian is False, 
+                pbc=args.periodicity, 
+                tol=args.tolerance,
+                miller = args.miller,
+                layer_num = args.layer_num,
+                z_min = args.z_min,
+                vacuum_max = args.vacuum_max,
+                vacuum_min = args.vacuum_min,
+                vacuum_resol = args.vacuum_resol,
+                vacuum_numb = args.vacuum_numb,
+                mid_point = args.mid_point
+            )
+    print("Do surface done! The constructed surface structure file path: {}\n".format("\n".join(res)))
+
+
+def run_surf_from_cell(cmd_list:list[str]): # Creating surface structures
+    parser = argparse.ArgumentParser(description='Construct a surface structures based on  a typical structure, such as fcc bcc hcp.')
+    parser.add_argument('-t', '--atom_types',    type=str, nargs='+',required=False,  help="The atom types. For example: '-t Al' ", default=None)
+    parser.add_argument('-m', '--supercell_matrix', type=int, nargs='+',  required=False, default=None, help="Supercell matrix, 3 or 9 values, for example, '2 0 0 0 2 0 0 0 1' or '2 2 1' represents that the supercell is 2x2 in the x and y directions")
+    parser.add_argument('-s', '--savename',      type=str, required=False, default=None, help="The output file name, if not provided, the 'atom.config' for pwmat/config, 'POSCAR' for vasp/poscar, 'lammps.lmp' for lammps/lmp will be used")
+    parser.add_argument('-o', '--output_format', type=str, required=False, default=None, help="the output file format, only support the format ['pwmat/config','vasp/poscar', 'lammps/lmp'], if not provided, the input format be used. \nNote: that outputting cp2k/scf format is not supported. In this case, the default will be adjusted to pwmat atom.config")
+    parser.add_argument('-c', '--cartesian',     action='store_true', help="If '-c' is set, the cartesian coordinates will be used, otherwise the fractional coordinates will be used.")
+    parser.add_argument('-p', '--periodicity',   type=int, nargs='+', required=False, help="'-p 1 1 1' indicates that the system is periodic in the x, y, and z directions. The default value is [1,1,1]", default=[1,1,1])
+    parser.add_argument('-l', '--tolerance',     type=float, required=False, help="Tolerance of fractional coordinates. The default is 1e-5. Prevent slight negative coordinates from being mapped into the simulation box.", default=1e-5)
+    parser.add_argument('-e', '--miller',        type=int, nargs='+',required=True,  help="The miller indices, the input parameter should be multiple triplets. For example: '-m h k l', the output or '-m h1 k1 l1 h2 k2 l2 ...'")
+    parser.add_argument('-n', '--layer_num',     type=int, required=False,   default=None, help="The number of atom layers that make up the slab structure.")
+    parser.add_argument('-z', '--z_min',         type=float, required=False, default=None, help="The thickness of the slab without vacuum (Angstrom). If layer_num is set, z_min will be ignored.")
+    parser.add_argument('-v', '--vacuum_max',    type=float, required=False, default=None, help="The maximal thickness of vacuum (Angstrom).")
+    parser.add_argument('-u', '--vacuum_min',    type=float, required=False, default=None, help="The minimal thickness of vacuum (Angstrom). Default value is 2 times atomic radius.")
+    parser.add_argument('-r', '--vacuum_resol',  type=float, required=False, default=None, help="Interval of thickness of vacuum. If size of vacuum_resol is 1, the interval is fixed to its value. If size of vacuum_resol is 2, the interval is vacuum_resol[0] before mid_point, otherwise vacuum_resol[1] after mid_point.")
+    parser.add_argument('-b', '--vacuum_numb',   type=int, required=False, default=None, help="The total number of vacuum layers Necessary if vacuum_resol is empty.")
+    parser.add_argument('-d', '--mid_point',     type=float, required=False, default=None, help="The mid point separating head region and tail region. Necessary if the size of vacuum_resol is 2 or 0.")
+    parser.add_argument('-e', '--cell_type',     type=str, required=False, default=None, help="The type of the structure to be generated. For example: '-e fcc', '-e hcp', '-e bcc', '-e sc', or '-e diamond'.")
+    parser.add_argument('-a', '--lattice',       type=float, required=False, default=None, help="The lattice constant for single cell.")
+       
+    args = parser.parse_args(cmd_list)
+    if args.supercell_matrix is not None:
+        assert len(args.supercell_matrix) == 3 or len(args.supercell_matrix) == 9, "The supercell matrix must be 3 or 9 values"
+        if len(args.supercell_matrix) == 3:
+            args.supercell_matrix = np.diag(args.supercell_matrix)
+            if args.supercell_matrix[0][2] != 0 or args.supercell_matrix[1][2] != 0 or \
+                (args.supercell_matrix[2][0] != 0 and args.supercell_matrix[2][1] != 0 and args.supercell_matrix[2][2] != 1) :
+                    raise Exception("Error! The input parameter supercell_matrix value of the surface system is incorrectly verified. The Z direction should be 1. For example:[1,2,1], [2,2,0,1,2,0,0,0,1], or [[2,2,0],[1,2,0],[0,0,1]]!") 
+    
+    if len(args.miller) % 3 != 0:
+        raise Exception("Input error! : The input parameter should be triple. For example: -e 1 1 0 or ")
+    args.miller = np.array(args.miller).reshape(-1, 3).tolist()
+    res = do_surface(
+                savename = args.savename, 
+                output_format = args.output_format, 
+                supercell_matrix = args.supercell_matrix, 
+                cartesian = args.cartesian is False, 
+                pbc=args.periodicity, 
+                tol=args.tolerance,
+                millers = args.miller,
+                layer_num = args.layer_num,
+                z_min = args.z_min,
+                vacuum_max = args.vacuum_max,
+                vacuum_min = args.vacuum_min,
+                vacuum_resol = args.vacuum_resol,
+                vacuum_numb = args.vacuum_numb,
+                mid_point = args.mid_point,
+                cell_type = args.cell_type,
+                lattice = args.lattice
+            )
+    print("Do surface done! The constructed surface structure file path: {}\n".format("\n".join(res)))
 
 def run_pertub(cmd_list:list[str]):
     parser = argparse.ArgumentParser(description='Disturb the atomic positions and unit cells of the structure!')
@@ -258,7 +367,10 @@ def run_convert_configs(cmd_list:list[str]):
         else:
             assert os.path.exists(_input)
             input_list.append(_input)
-
+    if not isinstance(args.gap, int) or args.gap <= 0:
+        raise Exception("Error! The input '-g' or '--gap' must be a positive integer!")
+    else:
+        args.gap = f"::{args.gap}"
     # FORMAT.check_format(args.input_format, FORMAT.support_images_format)
     FORMAT.check_format(args.output_format, [FORMAT.pwmlff_npy, FORMAT.extxyz])
 

@@ -8,3 +8,4 @@ pwdata/__pycache__/
 tmp.py
 examples/test_workdir*
 examples/omol_data/*.aselmdb-lock
+pwdata/test/test_tmp
