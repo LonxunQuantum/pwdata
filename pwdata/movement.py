@@ -27,7 +27,7 @@ class MOVEMENT(object):
             elif "Lattice" in ii:
                 lattice_stress = self.parse_lattice_stress(mvm_contents[idx+1:idx+4])
                 image.lattice = to_numpy_array(lattice_stress["lattice"])
-                image.virial = to_numpy_array(lattice_stress["virial"])
+                image.virial = -to_numpy_array(lattice_stress["virial"]) if len(lattice_stress["virial"]) > 0 else to_numpy_array(lattice_stress["virial"]) # The movement virial value is the opposite of vasp
             elif " Position" in ii:
                 position = self.parse_position(mvm_contents[idx+1:idx+image.atom_nums+1])
                 image.position = to_numpy_array(position["position"])

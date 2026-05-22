@@ -353,11 +353,17 @@ def search_by_format(workDir, format):
     return data_path[format]
 
 
+def calculate_optimal_group_size(N: int, cpu_num: int) -> dict:
+    if N // cpu_num >= 100:
+        return 100
+    else:
+        return N // cpu_num
+
 def load_files(input_dict:dict, input_format:str=None, atom_types:list[str]=None, query:str=None, cpu_nums=None, index=":"):
     image_data = None
     if input_format is not None:
         if input_format == FORMAT.meta:
-            chunk_size = 100
+            chunk_size = calculate_optimal_group_size(len(input_dict[FORMAT.meta]), cpu_nums)
             lmdb_nums = len(input_dict[FORMAT.meta])
             metadatas = [input_dict[FORMAT.meta][i:i + chunk_size] for i in range(0, lmdb_nums, chunk_size)]
             for idx, metapaths in enumerate(tqdm(metadatas, total=lmdb_nums // chunk_size)):
