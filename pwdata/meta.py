@@ -1,4 +1,5 @@
 import numpy as np
+import re
 import os, glob
 from tqdm import tqdm
 from pwdata.image import Image
@@ -84,6 +85,10 @@ class META(object):
         """处理每个 atom_list 并转换为对象列表"""
         return [to_image(Atoms) for Atoms in atom_list]
 
+# MPtrj LMDB stores stress in kbar rather than eV/Å³
+# 1 kbar = 6.241509e-4 eV/Å³
+KBAR_TO_EV_PER_A3 = 6.241509e-4
+
 def load_and_query_db(db_address, atom_types, query, filter_with_elements):
     # 加载数据库
     try:
@@ -103,6 +108,16 @@ def load_and_query_db(db_address, atom_types, query, filter_with_elements):
             atom_list.extend(list(dbs.select(query, filter=filter_with_elements)))
         else:  # query is not None and atom_types is None
             atom_list.extend(list(dbs.select(query)))
+
+    # MPtrj 系列数据集 stress 单位为 kbar，需转为 eV/Å³
+    if re.search(r'mptrj', db_address, re.IGNORECASE):
+        for atoms in atom_list:
+            try:
+                stress_val = atoms.stress
+                if stress_val is not None:
+                    atoms.stress = np.array(stress_val, dtype=float) * KBAR_TO_EV_PER_A3
+            except (AttributeError, TypeError):
+                pass
     return atom_list
 
 def query_fun(row, elements):
@@ -122,21 +137,45 @@ def to_image(Atoms):
     image.lattice = to_numpy_array(Atoms.cell).reshape(3, 3)
     image.position = to_numpy_array(Atoms.positions)
     image.cartesian = True
-    image.force = to_numpy_array(Atoms.forces)
-    image.Ep = to_float(Atoms.energy)
-    # 计算 Atomic-Energy
-    # atomic_energy, _, _, _ = np.linalg.lstsq([image.atom_type_num], np.array([image.Ep]), rcond=1e-3)
-    # atomic_energy = np.repeat(atomic_energy, image.atom_type_num)
-    # image.atomic_energy = atomic_energy.tolist()
 
-    if hasattr(Atoms, 'virial') is False and hasattr(Atoms, 'stress'):
-        vol = Atoms.volume
-        virial = (-np.array(Atoms.stress) * vol)
-        image.virial = np.array([
-            [virial[0], virial[5], virial[4]],
-            [virial[5], virial[1], virial[3]],
-            [virial[4], virial[3], virial[2]]
-        ])
-        # print(image.virial)
+    # Get forces and energy
+    # AtomsRow (from LMDB select): uses direct attribute access
+    # Atoms (with SinglePointCalculator): uses .get_*() method calls
+    try:
+        image.force = to_numpy_array(Atoms.forces)
+    except AttributeError:
+        image.force = to_numpy_array(Atoms.get_forces())
+    try:
+        image.Ep = to_float(Atoms.energy)
+    except AttributeError:
+        image.Ep = to_float(Atoms.get_potential_energy())
+
+    # Compute virial from stress tensor
+    # Convention: virial = -stress * volume
+    # AtomsRow path: .stress is 6-element Voigt [s_xx, s_yy, s_zz, s_yz, s_xz, s_xy]
+    # Atoms path: .get_stress(voigt=False) returns full 3x3 tensor
+    try:
+        stress_raw = Atoms.stress
+    except AttributeError:
+        stress_raw = None
+        try:
+            stress_raw = Atoms.get_stress(voigt=False)
+        except Exception:
+            pass
+
+    if stress_raw is not None:
+        stress = np.array(stress_raw)
+        volume = Atoms.volume
+        if stress.shape == (6,):
+            virial = -stress * volume
+            image.virial = np.array([
+                [virial[0], virial[5], virial[4]],
+                [virial[5], virial[1], virial[3]],
+                [virial[4], virial[3], virial[2]]
+            ])
+        else:
+            # Already 3x3 tensor
+            image.virial = -stress * volume
+
     image.format = 'metadata'
     return image

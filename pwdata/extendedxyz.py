@@ -150,10 +150,10 @@ def read_one_structures_from_lines(lines:list[str]):
         virial = [float(i) for i in result_dict["virial"].split()]
         assert len(virial) == 9, "virial in extxyz file should has 9 elements"
         image.virial = np.array(virial).reshape(3, 3)
-    if "stress" in result_dict.keys():
-        stress = [float(i) for i in result_dict["stress"].split(" ")]
+    elif "stress" in result_dict.keys():
+        stress = [float(i) for i in result_dict["stress"].split()]
         assert len(stress) == 9, "stress in extxyz file should has 9 elements"
-        volume = np.abs(np.linalg.det(image.lattice)) 
+        volume = np.abs(np.linalg.det(image.lattice))
         image.virial = -volume * np.reshape(stress, (3, 3))
     
     atomic_energy, _, _, _ = np.linalg.lstsq([image.atom_type_num], np.array([image.Ep]), rcond=1e-3)
