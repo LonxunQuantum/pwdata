@@ -13,7 +13,7 @@ class Image(object):
                  atom_type = None, atom_type_num = None, atom_nums = None, atom_types_image = None, 
                  iteration = None, Etot = None, Ep = None, Ek = None, scf = None, lattice = None, 
                  virial = None, position = None, force = None, atomic_energy = None,
-                 content = None, image_nums = None, pbc = None, cartesian = None):
+                 bec = None, content = None, image_nums = None, pbc = None, cartesian = None):
         """
         Represents an image in a AIMD trajectory.
 
@@ -29,6 +29,7 @@ class Image(object):
             scf (float): The index of the self-consistent field.
             lattice (list): The lattice vectors.
             virial (list): The virial tensor.
+            bec (list): The Born effective charge tensor per atom, shape (atom_nums, 9).
             position (list): The atomic positions.
             force (list): The atomic forces.
             atomic_energy (list): The atomic energies.
@@ -49,6 +50,7 @@ class Image(object):
         self.image_nums = to_integer(image_nums)
         self.lattice = to_numpy_array(lattice)
         self.virial = to_numpy_array(virial)
+        self.bec = to_numpy_array(bec)
         self.position = to_numpy_array(position)    # this position can be fractional coordinates or cartesian coordinates
         self.force = to_numpy_array(force)
         self.atomic_energy = to_numpy_array(atomic_energy)
@@ -65,6 +67,8 @@ class Image(object):
         self.force = self.force[sort_indices]
         if self.atomic_energy is not None:
             self.atomic_energy = self.atomic_energy[sort_indices]
+        if self.bec is not None:
+            self.bec = self.bec[sort_indices]
         cout_type, indices = np.unique(self.atom_types_image, return_index=True)
         sorted_indices = np.argsort(indices)
         cout_type = cout_type[sorted_indices]

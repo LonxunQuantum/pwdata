@@ -54,7 +54,11 @@ def get_xyz_content(image_data:Image):
         image_data._set_cartesian()
     xyz_content +="%d\n" % image_data.atom_nums
     # data_name.write("Iteration: %s\n" % image_data.iteration)
-    output_head = 'Lattice="%.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f" Properties=species:S:1:pos:R:3:force:R:3 pbc="T T T" energy={} '.format(image_data.Ep)
+    has_bec = image_data.bec is not None and len(image_data.bec) > 0
+    properties_head = "Properties=species:S:1:pos:R:3:"
+    properties_head += "bec:R:9:" if has_bec else ""
+    properties_head += "force:R:3"
+    output_head = 'Lattice="%.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f" {} pbc="T T T" energy={} '.format(properties_head, image_data.Ep)
     output_extended = (image_data.lattice[0][0], image_data.lattice[0][1], image_data.lattice[0][2], 
                         image_data.lattice[1][0], image_data.lattice[1][1], image_data.lattice[1][2], 
                         image_data.lattice[2][0], image_data.lattice[2][1], image_data.lattice[2][2])
@@ -68,9 +72,14 @@ def get_xyz_content(image_data:Image):
     xyz_content += output_head % output_extended
 
     for j in range(image_data.atom_nums):
-        properties_format = "%s %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f\n"
-        properties = (elements[image_data.atom_types_image[j]], image_data.position[j][0], image_data.position[j][1], image_data.position[j][2], 
-                        image_data.force[j][0], image_data.force[j][1], image_data.force[j][2])
+        if has_bec:
+            properties_format = "%s" + " %14.8f" * 15 + "\n"
+            properties = (elements[image_data.atom_types_image[j]], image_data.position[j][0], image_data.position[j][1], image_data.position[j][2],
+                          *image_data.bec[j].reshape(-1), image_data.force[j][0], image_data.force[j][1], image_data.force[j][2])
+        else:
+            properties_format = "%s %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f\n"
+            properties = (elements[image_data.atom_types_image[j]], image_data.position[j][0], image_data.position[j][1], image_data.position[j][2], 
+                          image_data.force[j][0], image_data.force[j][1], image_data.force[j][2])
         xyz_content += properties_format % properties
     return xyz_content
 
@@ -133,10 +142,11 @@ def read_one_structures_from_lines(lines:list[str]):
     result_dict = {key.lower(): value.strip('"') for key, value in matches}
     image.Ep = float(result_dict["energy"])
     properties = result_dict["properties"].split(":")
-    atom_types_image, postion, force = read_properties_data(image.atom_nums, properties, lines[1:])
+    atom_types_image, postion, force, bec = read_properties_data(image.atom_nums, properties, lines[1:])
     image.force = force
     image.position = postion
     image.atom_types_image = atom_types_image
+    image.bec = bec
     lattice = [float(i) for i in result_dict["lattice"].split()]
     assert len(lattice) == 9, "lattice in extxyz file should has 9 elements"
     image.lattice = np.array(lattice).reshape(-1, 3)
@@ -165,29 +175,44 @@ def read_one_structures_from_lines(lines:list[str]):
 def read_properties_data(
     num_atom:int, properties: list[str], lines: list[str]
 ):
-    species_offset, pos_offset, force_offset = 0, 0, 0
     assert len(properties) % 3 == 0
+    property_map = {}
     offset = 0
     for i in range(len(properties) // 3):
-        if properties[i * 3] == "species":
-            species_offset = offset
-        elif properties[i * 3] == "pos":
-            pos_offset = offset
-        elif properties[i * 3] == "force" or properties[i * 3] == "forces":
-            force_offset = offset
-        offset += int(properties[i * 3 + 2])
+        name = properties[i * 3].lower()
+        size = int(properties[i * 3 + 2])
+        property_map[name] = (offset, size)
+        offset += size
 
+    assert "species" in property_map, "species property is required in extxyz file"
+    assert "pos" in property_map, "pos property is required in extxyz file"
+    force_key = "forces" if "forces" in property_map else "force"
+    assert force_key in property_map, "force or forces property is required in extxyz file"
+    if "bec" in property_map:
+        assert property_map["bec"][1] == 9, "bec in extxyz file should has 9 elements per atom"
+
+    species_offset, _ = property_map["species"]
+    pos_offset, pos_size = property_map["pos"]
+    force_offset, force_size = property_map[force_key]
+    assert pos_size == 3, "pos in extxyz file should has 3 elements per atom"
+    assert force_size == 3, "force in extxyz file should has 3 elements per atom"
+
+    bec_offset = property_map["bec"][0] if "bec" in property_map else None
     assert num_atom == len(lines)
     type_list = []
     force = []
     position= []
+    bec = [] if bec_offset is not None else None
     for line in lines:
         data = line.split()
         type_list.append(ELEMENTTABLE[data[species_offset]])
         force.append([float(data[force_offset]), float(data[force_offset + 1]), float(data[force_offset + 2])])
         position.append([float(data[pos_offset]), float(data[pos_offset + 1]), float(data[pos_offset + 2])])
+        if bec_offset is not None:
+            bec.append([float(data[bec_offset + i]) for i in range(9)])
     type_list = np.array(type_list) #.reshape(-1, 1)
     position = np.array(position)
     force = np.array(force)
-    return type_list, position, force
-    
+    bec = np.array(bec).reshape(num_atom, 9) if bec is not None else None
+    return type_list, position, force, bec
+
