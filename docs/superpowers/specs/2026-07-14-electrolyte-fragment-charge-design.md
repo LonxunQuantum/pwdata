@@ -51,7 +51,19 @@ Fragment 的身份不依赖原子排列顺序，也不要求预先知道物种�
 
 ## 五、电荷解析
 
-电荷来源严格按照以下优先级处理：
+电荷配置分为三个文件，避免自动结果覆盖人工确认内容：
+
+- `fragment_charge_rules.yaml`：人工维护的通用化学规则，例如固定金属价态和已验证物种拓扑。
+- `fragment_charge_registry.generated.yaml`：程序扫描数据后自动生成的精确
+  `signature -> charge` 注册表，记录来源、状态、出现次数和示例帧。
+- `fragment_charge_overrides.yaml`：人工确认或修正的精确 signature 电荷，优先级最高，
+  程序只读取、不自动改写。
+
+首次运行时程序先生成 signature 目录，再用固定规则和电中性方程填充自动注册表。
+仍然无法确定的 signature 在自动注册表中保留 `charge: null` 和 `status: needs_review`，
+人工只需要把确认结果写入 overrides 文件。
+
+电荷解析严格按照以下优先级处理：
 
 1. 人工维护的 YAML 注册表中，以精确 signature 配置的电荷。
 2. 已验证 fragment 的确定性规则：单原子 Li、Na、K 为 +1，Mg、Ca 为 +2，
@@ -59,8 +71,11 @@ Fragment 的身份不依赖原子排列顺序，也不要求预先知道物种�
    SO4（-2）、TFSI（-1）、FSI（-1）、BF4（-1）、PF6（-1）、
    DMSO（0）和 DMSO2（0）。只有分子式和拓扑同时匹配时才能自动赋值，
    不能仅凭分子式赋值。
-3. 对不含 Fe 和 Zn 的帧，利用全数据集电中性方程推断未知 signature：
+3. 对不含 Fe 和 Zn 的帧，利用 `part000` 中每帧分别电中性的约束，联立推断未知 signature：
    `sum(fragment_count * signature_charge) = frame_target_charge`。
+
+这里的“全数据集”表示同时使用 `part000` 中所有适用帧各自的独立方程，并让相同 signature
+在不同帧共享同一个电荷值；不是把所有帧的 fragment 合并后只要求总和为零。
 
 自动推断首先传播只含一个未知 signature 的方程，然后对剩余相互关联的方程组按连通子系统求解。
 只有同时满足以下条件时才接受结果：
@@ -86,7 +101,8 @@ Fragment 的身份不依赖原子排列顺序，也不要求预先知道物种�
 - `pwdata/electrolytes/signatures.py`：分子式和与原子顺序无关的拓扑 signature。
 - `pwdata/electrolytes/charge_inference.py`：注册表、固定规则、电中性方程、Fe/Zn 剩余电荷处理和验证。
 - `pwdata/electrolytes/preprocess.py`：两遍流式处理的命令行入口和报告生成。
-- `pwdata/electrolytes/fragment_charges.yaml`：已验证的初始规则和推断限制。
+- `pwdata/electrolytes/fragment_charge_rules.yaml`：已验证的通用规则和推断限制。
+- `pwdata/electrolytes/fragment_charge_overrides.yaml`：人工确认或修正的精确 signature 电荷。
 - `tests/electrolytes/`：共价图、signature、电荷推断、输入输出和 Zn 回归测试。
 
 第一遍扫描所有帧，构建 fragment 和 signature 目录；第二遍解析电荷、验证电中性，
@@ -98,6 +114,7 @@ Fragment 的身份不依赖原子排列顺序，也不要求预先知道物种�
 
 - `part000_fragment_charge.xyz`；
 - `fragment_signature_catalog.tsv`；
+- `fragment_charge_registry.generated.yaml`；
 - `frame_charge_summary.tsv`；
 - `charge_inference_report.tsv`；
 - `unresolved_fragments.jsonl`；
