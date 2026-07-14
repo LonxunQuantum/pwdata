@@ -120,7 +120,8 @@ Expected: import failure for `build_fragments` or `make_signature`
 使用 `ase.neighborlist.neighbor_list("ijd", atoms, max_cutoff)` 获得周期候选；按
 `1.20 * (covalent_radius_i + covalent_radius_j)` 过滤，O-H 截断不超过 1.25 A，
 并排除 Li/Na/K/Mg/Ca/Fe/Zn 的全部共价边。按归一化距离排序，在
-`H/F/Cl/Br/I=1, O=2, C=4, N=4, B=4, P=6, S=6` 的最大 degree 内选边；
+`H/F/Br/I=1, O=2, C=4, N=4, B=4, P=6, S=6` 的最大 degree 内选边；
+Cl 默认 degree 1，仅当同一 Cl 至少有 3 个短 Cl-O 候选时允许 degree 4；
 竞争最后一个价键且距离差不超过 0.03 A 时记录 ambiguous。使用 union-find 生成组件。
 
 signature 使用 Hill 分子式、元素-degree 计数、元素对边计数和迭代至稳定的
@@ -219,8 +220,8 @@ Expected: import failure for preprocessing interfaces
 
 第一遍保存每帧 signature Counter、fragment 状态、catalog 计数和示例帧；输出自动 YAML
 注册表。第二遍重新计算 fragment，确认 signature 未漂移，构造每原子 fragment ID 和
-重复 charge，写 XYZ、TSV、JSONL 和压缩 NPZ。所有写入先使用同目录 `.tmp` 文件，
-成功后用 `os.replace` 原子替换；异常时保留旧结果。
+重复 charge，写 XYZ、TSV、JSONL 和压缩 NPZ。两遍前后校验源文件 SHA-256/stat，
+所有写入先使用同目录 `.tmp` 文件；替换任一文件失败时回滚已经替换的文件并恢复全部旧结果。
 
 - [ ] **Step 4: 运行全部新增测试和现有 Zn 测试**
 
