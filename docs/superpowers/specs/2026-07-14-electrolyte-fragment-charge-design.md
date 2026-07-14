@@ -1,125 +1,132 @@
-# Electrolyte Fragment Charge Preprocessing Design
+# 电解液 Fragment 与电荷预处理设计
 
-## Scope
+## 一、范围
 
-Implement a preprocessing pipeline for
-`/data/public/wuxingxing/electrolytes/decompress/0-19/part000.xyz`.
-Production code lives under `pwdata/electrolytes/`. Results are written to
-`/data/public/wuxingxing/electrolytes/decompress/datacout/part000`.
+针对以下数据文件实现预处理流程：
 
-The source file contains 1675 neutral frames with 148 to 3068 atoms per frame.
-Its atom properties are `species`, `pos`, and `forces`; it has no frame charge
-field, so the configured frame target charge defaults to zero.
+`/data/public/wuxingxing/electrolytes/decompress/0-19/part000.xyz`
 
-## Output Semantics
+生产代码放在 `pwdata/electrolytes/` 目录下，处理结果写入：
 
-The annotated extended XYZ preserves every source field and adds:
+`/data/public/wuxingxing/electrolytes/decompress/datacout/part000`
 
-- `fragment:I:1`: a zero-based fragment identifier local to the frame.
-- `charge:R:1`: the target total charge of that fragment, repeated on every
-  atom belonging to the fragment.
+源文件共 1675 帧，每帧包含 148 至 3068 个原子。原子属性只有
+`species`、`pos` 和 `forces`，没有帧总电荷字段，因此默认每帧目标总电荷为 0。
 
-Training code must group atoms by `fragment`, sum predicted atomic charges in
-the group, and compare that sum with one deduplicated `charge` label. It must
-not sum the repeated labels. An unresolved fragment is written with `charge=nan`.
+## 二、输出列的语义
 
-## Fragment Construction
+标注后的 extended XYZ 保留源文件的全部字段，并增加：
 
-Each frame is streamed from extended XYZ. Covalent bonds are found with a
-periodic neighbor list and a general 3x3 cell; no all-atom distance matrix is
-constructed. Candidate bonds use configurable element-pair cutoffs derived
-from covalent radii, plus element valence limits. Hydrogen and halogen atoms
-have maximum covalent degree one. Over-valent or equal-quality competing
-assignments are reported as ambiguous.
+- `fragment:I:1`：当前帧内从 0 开始编号的 fragment ID。
+- `charge:R:1`：该 fragment 的目标总电荷，在 fragment 所属的每个原子行中重复保存。
 
-Li, Na, K, Mg, Ca, Fe, and Zn never participate in the covalent fragment graph.
-They remain single-atom fragments even when short coordination contacts exist.
-Connected components are obtained with union-find. Every atom must occur in
-exactly one component.
+训练时必须按 `fragment` 对原子分组，将组内预测的原子电荷求和，然后与该组唯一的
+`charge` 标签计算损失。重复保存的 `charge` 标签只能读取一次，不能在组内累加。
+无法解析电荷的 fragment 写为 `charge=nan`。
 
-## Fragment Signatures
+## 三、Fragment 构建
 
-Fragment identity does not depend on atom order or a species name. A stable
-signature combines:
+逐帧流式读取 extended XYZ。使用周期性邻居表和一般的 3x3 晶胞矩阵搜索共价键，
+不得构造全原子距离矩阵。候选共价键采用可配置的元素对截断半径，默认由共价半径
+生成，同时施加元素最大价态约束。H 和卤素原子的最大共价 degree 为 1。
+如果出现超过价态限制或多个等价候选解，则将该 fragment 标记为 ambiguous 并输出报告。
 
-- Hill-style formula;
-- element-labelled Weisfeiler-Lehman topology hash;
-- node-degree histogram;
-- element-pair edge counts.
+Li、Na、K、Mg、Ca、Fe 和 Zn 不参与共价 fragment 图。即使它们与其他原子距离很短，
+也必须保持为单原子 fragment，不得把金属配位键当作分子内部共价键。
 
-The catalog retains the unhashed invariants as a collision guard. Signatures
-with incompatible invariants are reported instead of merged.
+共价图的连通分量使用 union-find 提取。每个原子必须恰好属于一个 fragment，不能遗漏，
+也不能重复分配。
 
-## Charge Resolution
+## 四、Fragment Signature
 
-Charge resolution follows a strict precedence order:
+Fragment 的身份不依赖原子排列顺序，也不要求预先知道物种名称。稳定 signature 由以下内容组成：
 
-1. Exact signature assignments in a human-editable YAML registry.
-2. Deterministic rules for validated fragments. Monatomic Li, Na, and K are
-   +1; Mg and Ca are +2; monatomic F, Cl, Br, and I are -1. The initial
-   topology-checked registry covers H2O (0), DMF (0), SO4 (-2), TFSI (-1),
-   FSI (-1), BF4 (-1), PF6 (-1), DMSO (0), and DMSO2 (0). A matching formula
-   without the registered topology is not assigned automatically.
-3. Dataset-level neutrality equations for all frames without Fe or Zn:
-   `sum(fragment_count * signature_charge) = frame_target_charge`.
+- Hill 顺序分子式；
+- 带元素标签的 Weisfeiler-Lehman 拓扑哈希；
+- 节点 degree 直方图；
+- 元素对键类型计数。
 
-Inference first propagates equations containing one unknown signature, then
-solves each remaining full-rank connected equation system. A solution is
-accepted only when it is unique, integral, within the configured range -4 to
-+4, and exactly satisfies every participating frame. Underdetermined,
-non-integral, or conflicting systems remain unresolved. Heuristics and priors
-may rank a report but may not create a charge label.
+目录文件同时保存未哈希的拓扑不变量，用于检查哈希碰撞。如果相同 signature 对应不兼容的
+拓扑不变量，则报告冲突，不能将两者合并。
 
-After all non-Fe/Zn fragment charges in a frame are known, Fe and Zn are
-resolved by conservation. A single Fe receives the remaining frame charge.
-For Zn, the remaining total charge is divided equally among all Zn fragments.
-Frames containing both Fe and Zn, multiple Fe atoms, or an unknown nonmetal
-fragment remain unresolved and are reported.
+## 五、电荷解析
 
-## Components
+电荷来源严格按照以下优先级处理：
 
-- `pwdata/electrolytes/extxyz_io.py`: streaming parser and annotated writer.
-- `pwdata/electrolytes/fragment_graph.py`: periodic neighbor search,
-  valence-aware bond selection, and union-find components.
-- `pwdata/electrolytes/signatures.py`: formula and order-independent topology
-  signatures.
-- `pwdata/electrolytes/charge_inference.py`: registry, rules, neutrality
-  equations, Fe/Zn residual handling, and validation.
-- `pwdata/electrolytes/preprocess.py`: two-pass CLI orchestration and reports.
-- `pwdata/electrolytes/fragment_charges.yaml`: validated seed assignments and
-  inference limits.
-- `tests/electrolytes/`: focused graph, signature, inference, I/O, and Zn
-  regression tests.
+1. 人工维护的 YAML 注册表中，以精确 signature 配置的电荷。
+2. 已验证 fragment 的确定性规则：单原子 Li、Na、K 为 +1，Mg、Ca 为 +2，
+   单原子 F、Cl、Br、I 为 -1。初始拓扑规则覆盖 H2O（0）、DMF（0）、
+   SO4（-2）、TFSI（-1）、FSI（-1）、BF4（-1）、PF6（-1）、
+   DMSO（0）和 DMSO2（0）。只有分子式和拓扑同时匹配时才能自动赋值，
+   不能仅凭分子式赋值。
+3. 对不含 Fe 和 Zn 的帧，利用全数据集电中性方程推断未知 signature：
+   `sum(fragment_count * signature_charge) = frame_target_charge`。
 
-The first pass builds fragments and a signature catalog for all frames. The
-second pass resolves charges, validates neutrality, and writes the annotated
-XYZ and reports.
+自动推断首先传播只含一个未知 signature 的方程，然后对剩余相互关联的方程组按连通子系统求解。
+只有同时满足以下条件时才接受结果：
 
-## Results
+- 解唯一；
+- 解为整数；
+- 电荷位于配置范围 -4 至 +4；
+- 能精确满足所有参与推断的帧。
 
-The output directory contains:
+欠定、非整数或互相冲突的方程组保持 unresolved。启发式规则或先验信息只能用于报告排序，
+不能据此生成训练标签。
 
-- `part000_fragment_charge.xyz`;
-- `fragment_signature_catalog.tsv`;
-- `frame_charge_summary.tsv`;
-- `charge_inference_report.tsv`;
-- `unresolved_fragments.jsonl`;
-- `fragment_charge_summary.txt`;
-- `fragment_charge_metadata.npz`.
+当一帧中所有非 Fe/Zn fragment 的电荷都已确定后，再用电荷守恒处理 Fe 和 Zn：
 
-Reports include source path, SHA-256, size, and modification time. The summary
-records resolved and unresolved frame counts, signature counts, neutrality
-violations, Fe/Zn charge distributions, and atom-assignment validation.
+- 单个 Fe 获得该帧剩余总电荷；
+- 所有 Zn 获得该帧剩余总电荷的平均值，每个 Zn 仍是独立 fragment；
+- 同一帧同时含 Fe 和 Zn、含多个 Fe，或仍有未知非金属 fragment 时，该帧保持 unresolved。
 
-## Verification
+## 六、代码组件
 
-Automated tests cover general-cell periodic bonds, atom reordering, metal
-isolation, hydrogen-bond rejection, signature stability, unique and
-underdetermined charge systems, Fe/Zn conservation, repeated charge-column
-semantics, streaming I/O, and unknown/ambiguous reporting. The existing
-`Zn.xyz` regression must still produce 67 H2O, 23 DMF, 7 SO4, 7 Zn, Zn total
-charge +14, and Zn average charge +2.
+- `pwdata/electrolytes/extxyz_io.py`：流式解析源 XYZ，并写出增加标注列的 XYZ。
+- `pwdata/electrolytes/fragment_graph.py`：周期性邻居搜索、价态约束建键和 union-find 连通分量。
+- `pwdata/electrolytes/signatures.py`：分子式和与原子顺序无关的拓扑 signature。
+- `pwdata/electrolytes/charge_inference.py`：注册表、固定规则、电中性方程、Fe/Zn 剩余电荷处理和验证。
+- `pwdata/electrolytes/preprocess.py`：两遍流式处理的命令行入口和报告生成。
+- `pwdata/electrolytes/fragment_charges.yaml`：已验证的初始规则和推断限制。
+- `tests/electrolytes/`：共价图、signature、电荷推断、输入输出和 Zn 回归测试。
 
-The complete `part000.xyz` run is accepted only if every atom receives exactly
-one fragment ID, every resolved frame has a unique fragment charge per group,
-and the deduplicated fragment charges sum to zero within `1e-8`.
+第一遍扫描所有帧，构建 fragment 和 signature 目录；第二遍解析电荷、验证电中性，
+并写出标注后的 XYZ 和各类报告。
+
+## 七、结果文件
+
+输出目录包含：
+
+- `part000_fragment_charge.xyz`；
+- `fragment_signature_catalog.tsv`；
+- `frame_charge_summary.tsv`；
+- `charge_inference_report.tsv`；
+- `unresolved_fragments.jsonl`；
+- `fragment_charge_summary.txt`；
+- `fragment_charge_metadata.npz`。
+
+报告中保存源文件路径、SHA-256、文件大小和修改时间。汇总文件记录已解析与未解析帧数量、
+signature 数量、电中性异常、Fe/Zn 电荷分布和原子分配检查结果。
+
+## 八、测试与验收
+
+自动测试覆盖：
+
+- 一般晶胞下的跨周期共价键；
+- 打乱原子顺序后结果不变；
+- 金属始终保持单原子 fragment；
+- 氢键不能识别成共价键；
+- signature 与原子排列无关；
+- 唯一方程解和欠定方程报告；
+- Fe/Zn 电荷守恒处理；
+- fragment 内重复 charge 标签的语义；
+- 多帧流式输入输出；
+- 未知和 ambiguous fragment 的错误报告。
+
+现有 `Zn.xyz` 回归测试必须继续得到：67 个 H2O、23 个 DMF、7 个 SO4、
+7 个 Zn、Zn 总形式电荷 +14、Zn 平均形式电荷 +2。
+
+完整运行 `part000.xyz` 后，必须满足：
+
+- 每个原子恰好得到一个 fragment ID；
+- 每个已解析 fragment 内的重复 charge 标签完全一致；
+- 每个已解析帧按 fragment 去重后的电荷总和在 `1e-8` 误差内等于 0。
