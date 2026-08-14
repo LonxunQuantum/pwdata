@@ -162,6 +162,8 @@ def run_super_cell(cmd_list:list[str]):
     assert len(args.supercell_matrix) == 3 or len(args.supercell_matrix) == 9, "The supercell matrix must be 3 or 9 values"
     if len(args.supercell_matrix) == 3:
         args.supercell_matrix = np.diag(args.supercell_matrix)
+    else:
+        args.supercell_matrix = np.array(args.supercell_matrix).reshape(3, 3)
 
     do_super_cell(args.input, args.input_format, args.atom_types, args.savename, args.output_format, args.supercell_matrix, args.cartesian is False, pbc=args.periodicity, tol=args.tolerance)
     print("supercell the config done!")
@@ -191,9 +193,11 @@ def run_surf_from_config(cmd_list:list[str]): # Creating surface structures
         assert len(args.supercell_matrix) == 3 or len(args.supercell_matrix) == 9, "The supercell matrix must be 3 or 9 values"
         if len(args.supercell_matrix) == 3:
             args.supercell_matrix = np.diag(args.supercell_matrix)
-            if args.supercell_matrix[0][2] != 0 or args.supercell_matrix[1][2] != 0 or \
-                (args.supercell_matrix[2][0] != 0 and args.supercell_matrix[2][1] != 0 and args.supercell_matrix[2][2] != 1) :
-                    raise Exception("Error! The input parameter supercell_matrix value of the surface system is incorrectly verified. The Z direction should be 1. For example:[1,2,1], [2,2,0,1,2,0,0,0,1], or [[2,2,0],[1,2,0],[0,0,1]]!") 
+        else:
+            args.supercell_matrix = np.array(args.supercell_matrix).reshape(3, 3)
+        if args.supercell_matrix[0][2] != 0 or args.supercell_matrix[1][2] != 0 or \
+            (args.supercell_matrix[2][0] != 0 and args.supercell_matrix[2][1] != 0 and args.supercell_matrix[2][2] != 1) :
+                raise Exception("Error! The input parameter supercell_matrix value of the surface system is incorrectly verified. The Z direction should be 1. For example:[1,2,1], [2,2,0,1,2,0,0,0,1], or [[2,2,0],[1,2,0],[0,0,1]]!")
     
     if len(args.miller) % 3 != 0:
         raise Exception("Input error! : The input parameter should be triple. For example: -e 1 1 0 or ")
@@ -207,7 +211,7 @@ def run_surf_from_config(cmd_list:list[str]): # Creating surface structures
                 cartesian = args.cartesian is False, 
                 pbc=args.periodicity, 
                 tol=args.tolerance,
-                miller = args.miller,
+                millers = args.miller,
                 layer_num = args.layer_num,
                 z_min = args.z_min,
                 vacuum_max = args.vacuum_max,
@@ -244,9 +248,11 @@ def run_surf_from_cell(cmd_list:list[str]): # Creating surface structures
         assert len(args.supercell_matrix) == 3 or len(args.supercell_matrix) == 9, "The supercell matrix must be 3 or 9 values"
         if len(args.supercell_matrix) == 3:
             args.supercell_matrix = np.diag(args.supercell_matrix)
-            if args.supercell_matrix[0][2] != 0 or args.supercell_matrix[1][2] != 0 or \
-                (args.supercell_matrix[2][0] != 0 and args.supercell_matrix[2][1] != 0 and args.supercell_matrix[2][2] != 1) :
-                    raise Exception("Error! The input parameter supercell_matrix value of the surface system is incorrectly verified. The Z direction should be 1. For example:[1,2,1], [2,2,0,1,2,0,0,0,1], or [[2,2,0],[1,2,0],[0,0,1]]!") 
+        else:
+            args.supercell_matrix = np.array(args.supercell_matrix).reshape(3, 3)
+        if args.supercell_matrix[0][2] != 0 or args.supercell_matrix[1][2] != 0 or \
+            (args.supercell_matrix[2][0] != 0 and args.supercell_matrix[2][1] != 0 and args.supercell_matrix[2][2] != 1) :
+                raise Exception("Error! The input parameter supercell_matrix value of the surface system is incorrectly verified. The Z direction should be 1. For example:[1,2,1], [2,2,0,1,2,0,0,0,1], or [[2,2,0],[1,2,0],[0,0,1]]!")
     
     if len(args.miller) % 3 != 0:
         raise Exception("Input error! : The input parameter should be triple. For example: -e 1 1 0 or ")

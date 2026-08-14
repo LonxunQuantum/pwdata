@@ -29,7 +29,7 @@ def cmd_infos():
     info += "\tYou can also use 'pwdata convert_config -h' to obtain a more detailed parameter list\n\n"
     
     info += "convert_configs or cvt_configs:\n"
-    info += "\tExtract various trajectory files(movement of PWmat, outcar of Vasp, lammps/dump of Lammps, cp2k-mdfile of CP2K) or data sets (deepmd/npy, deepmd/raw, extxyz, meta aselmdb) into pwmlff/npy or extxyz format, the command example:\n"
+    info += "\tExtract various trajectory files(movement of PWmat, outcar of Vasp, lammps/dump of Lammps, cp2k-md file of CP2K, castep/geom/md of CASTEP) or data sets (deepmd/npy, deepmd/raw, extxyz, meta aselmdb) into pwmlff/npy or extxyz format, the command example:\n"
     info += "\tpwdata convert_images -i input_file1 input_file2 ... input_filen -f input_file_format -n output_format_name -o output_format\n\n"
 
     info += "count or count_configs:\n"
@@ -49,6 +49,9 @@ def cmd_infos():
     info += "| LAMMPS            | dump             | True        | False | 'lammps/dump'              |\n"
     info += "| CP2K              | stdout, xyz, pdb | True        | True  | 'cp2k/md'                  |\n"
     info += "| CP2K              | stdout           | False       | True  | 'cp2k/scf'                 |\n"
+    info += "| CASTEP            | <seed>.geom      | True        | True  | 'castep/geom'              |\n"
+    info += "| CASTEP            | <seed>.md        | True        | True  | 'castep/md'                |\n"
+    info += "| CASTEP            | <seed>.castep    | True        | True  | 'castep/scf'               |\n"
     info += "| PWMLFF            | \*.npy           | True        | True  | 'pwmlff/npy'               |\n"
     info += "| DeepMD (read)     | \*.npy, \*.raw   | True        | True  | 'deepmd/npy', 'deepmd/raw' |\n"
     info += "| \* (extended xyz) | \*.xyz           | True        | True  | 'extxyz'                   |\n"

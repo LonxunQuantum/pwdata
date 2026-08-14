@@ -104,16 +104,22 @@ def do_surface(input_file:str,
         for ii in miller:
             miller_str += str(ii)
         tmp_file = f"{prefix_random}-surf-{miller_str}-POSCAR"
+        # general_surface expects an ASE Atoms object, convert from pymatgen
+        ss_atoms = AseAtomsAdaptor.get_atoms(ss)
+        # a vacuum is required, otherwise the slab cell has a zero z-vector and
+        # cannot be written; '-v/--vacuum_max' is the vacuum thickness used
+        # when '-u/--vacuum_min' is not given
+        vacuum = vacuum_min if vacuum_min is not None else vacuum_max
         # slabgen = SlabGenerator(ss, miller, z_min, 1e-3)
         if layer_num is not None:
             slab = general_surface.surface(
-                ss, indices=miller, vacuum=vacuum_min, layers=layer_num
+                ss_atoms, indices=miller, vacuum=vacuum, layers=layer_num
             )
         else:
             # build slab according to z_min value
             for layer_numb in range(1, max_layer_numb + 1):
                 slab = general_surface.surface(
-                    ss, indices=miller, vacuum=vacuum_min, layers=layer_numb
+                    ss_atoms, indices=miller, vacuum=vacuum, layers=layer_numb
                 )
                 if slab.cell.lengths()[-1] >= z_min:
                     break
