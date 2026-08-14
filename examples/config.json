@@ -20,6 +20,10 @@
         {
             "input_file":"./vasp_data/LiSi_POSCAR",
             "input_format":"vasp/poscar"
+        },
+        {
+            "input_file":"./castep_data/dft.castep",
+            "input_format":"castep/scf"
         }
     ],
     "convert_configs":[
@@ -72,6 +76,14 @@
             "input_file":["./meta_data/alex_val/alex_go_aao_001.aselmdb", "./meta_data/alex_val/alex_go_aao_002.aselmdb"],
             "input_format":"meta",
             "atom_types": ["Pt", "Ge"]
+        },
+        {
+            "input_file":"./castep_data/dft.geom",
+            "input_format":"castep/geom"
+        },
+        {
+            "input_file":"./castep_data/dft.md",
+            "input_format":"castep/md"
         }
     ],
     "call_convert_configs":[
@@ -123,6 +135,18 @@
             "input_file":"./meta_data.json",
             "input_format":"meta",
             "atom_types": ["Pt", "Ge"]
+        },
+        {
+            "input_file":"./castep_data/dft.castep",
+            "input_format":"castep/scf"
+        },
+        {
+            "input_file":"./castep_data/dft.geom",
+            "input_format":"castep/geom"
+        },
+        {
+            "input_file":"./castep_data/dft.md",
+            "input_format":"castep/md"
         }
     ]
 }

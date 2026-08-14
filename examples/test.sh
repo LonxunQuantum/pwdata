@@ -94,6 +94,12 @@ pwdata convert_configs -i ./meta_data/alex_val/alex_go_aao_001.aselmdb ./meta_da
 pwdata convert_configs -i ./meta_data/alex_val/alex_go_aao_001.aselmdb ./meta_data/alex_val/alex_go_aao_002.aselmdb -f meta -s ./test_workdir/11_1_meta_extxyz -o extxyz -g 1 -m 1 -t Pt Ge
 pwdata convert_configs -i ./meta_data/alex_val -f meta -s ./test_workdir/12_0_meta_PWdata -o pwmlff/npy -g 1 -m 1 -t Pt Ge
 pwdata convert_configs -i ./meta_data/alex_val -f meta -s ./test_workdir/12_1_meta_extxyz -o extxyz -g 1 -m 1 -t Pt Ge
+pwdata convert_configs -i ./castep_data/dft.castep -f castep/scf -s ./test_workdir/13_0_castep_scf_PWdata -o pwmlff/npy -g 1 -m 1
+pwdata convert_configs -i ./castep_data/dft.castep -f castep/scf -s ./test_workdir/13_1_castep_scf_extxyz -o extxyz -g 1 -m 1
+pwdata convert_configs -i ./castep_data/dft.geom -f castep/geom -s ./test_workdir/14_0_castep_geom_PWdata -o pwmlff/npy -g 1 -m 1
+pwdata convert_configs -i ./castep_data/dft.geom -f castep/geom -s ./test_workdir/14_1_castep_geom_extxyz -o extxyz -g 1 -m 1
+pwdata convert_configs -i ./castep_data/dft.md -f castep/md -s ./test_workdir/15_0_castep_md_PWdata -o pwmlff/npy -g 1 -m 1
+pwdata convert_configs -i ./castep_data/dft.md -f castep/md -s ./test_workdir/15_1_castep_md_extxyz -o extxyz -g 1 -m 1
 # pwdata convert_configs -i ./meta_data.json -f meta -s ./test_workdir/13_0_meta_PWdata -o pwmlff/npy -g 1 -m 1 -t Pt Ge
 # pwdata convert_configs -i ./meta_data.json -f meta -s ./test_workdir/13_1_meta_extxyz -o extxyz -g 1 -m 1 -t Pt Ge
 
@@ -105,6 +111,10 @@ pwdata convert_configs -i ./meta_data/alex_val -f meta -s ./test_workdir/12_1_me
  pwdata count -i ./xyz_data
  pwdata count -i ./deepmd_data/alloy/IrNi_POSCAR/deepmd ./deepmd_data/alloy/IrPdNi_POSCAR/deepmd ./deepmd_data/alloy/RhIrPdNi_POSCAR/deepmd
  pwdata count -i ./cp2k_data/dft.log
+ pwdata count -i ./castep_data/dft.castep
+ pwdata count -i ./castep_data/dft_geomopt.castep
+ pwdata count -i ./castep_data/dft.geom
+ pwdata count -i ./castep_data/dft.md
  pwdata count -i ./lmps_data/HfO2/0.lammpstrj ./lmps_data/HfO2/10.lammpstrj ./lmps_data/HfO2/20.lammpstrj ./lmps_data/HfO2/30.lammpstrj -t Hf O
  pwdata count -i ./meta_data/alex_val/alex_go_aao_001.aselmdb ./meta_data/alex_val/alex_go_aao_002.aselmdb -t Pt Ge
  pwdata count -i ./meta_data/alex_val -t Pt Ge

@@ -5,6 +5,7 @@ from collections import Counter
 from pwdata.image import Image
 from pwdata.calculators.const import ELEMENTTABLE
 from pwdata.utils.format_change import to_numpy_array, to_integer, to_float
+from pwdata.utils.constant import HARTREE2EV, HARTREE2EV_PER_BOHR2ANG, gpa2ev
 
 class CP2KMD(object):
     def __init__(self, stdout_file):
@@ -67,7 +68,7 @@ class CP2KMD(object):
                 Ep = float(step_pattern.findall(ii)[0][-1])       # Pot.[a.u.]
                 image = self.image_list[iteration]
                 image.iteration = iteration
-                image.Ep = to_float(Ep * 27.2113838565563)    # convert to eV
+                image.Ep = to_float(Ep * HARTREE2EV)    # convert to eV
                 # atom_names = []
                 # atom_types_image = []
                 atom_positions = []
@@ -123,7 +124,7 @@ class CP2KMD(object):
                 sc = Counter(atom_names)
                 atom_type = list(sc.keys())
                 atom_type_num = list(sc.values())
-                image.Ep = to_float(Ep * 27.2113838565563)    # convert to eV
+                image.Ep = to_float(Ep * HARTREE2EV)    # convert to eV
                 image.position = to_numpy_array(position)
                 image.atom_type = to_numpy_array([ELEMENTTABLE[atom] for atom in atom_type])
                 image.atom_type_num = to_numpy_array(atom_type_num)
@@ -148,7 +149,7 @@ class CP2KMD(object):
                 atom_forces = [[float(_) for _ in atom.split()[1:]] for atom in label_f_contents[idx+1:idx+image.atom_nums+1]]
                 atom_forces = list(zip(atom_name, atom_forces))
                 atom_forces.sort(key=lambda x: x[0])  # Sort atom_forces by atom name
-                image.force = to_numpy_array([[tmp * 51.42206318571696 for tmp in force] for _, force in atom_forces])  # convert to eV/angstrom
+                image.force = to_numpy_array([[tmp * HARTREE2EV_PER_BOHR2ANG for tmp in force] for _, force in atom_forces])  # convert to eV/angstrom
             
 
 class CP2KSCF(object):
@@ -198,7 +199,7 @@ class CP2KSCF(object):
             elif "ENERGY| Total FORCE_EVAL" in ii:
                 # energy = float(stdout_contents[idx-2].split()[-2])  # Pot.[a.u.]
                 energy = float(ii.split()[-1])  # Pot.[a.u.]
-                image.Ep = to_float(energy * 27.2113838565563)   # convert to eV
+                image.Ep = to_float(energy * HARTREE2EV)   # convert to eV
                 atomic_energy, _, _, _ = np.linalg.lstsq([image.atom_type_num], np.array([image.Ep]), rcond=1e-3)
                 atomic_energy = np.repeat(atomic_energy, image.atom_type_num)
                 image.atomic_energy = to_numpy_array(atomic_energy.tolist())
@@ -229,7 +230,7 @@ class CP2KSCF(object):
         return {"position": position, "atom_type": atom_type, "atom_type_num": atom_type_num, "atom_types_image": atom_types_image}
     
     def parse_force(self, force_content):
-        force = [[float(_) * 51.42206318571696 for _ in atom.split()[3:6]] for atom in force_content] # convert to eV/angstrom
+        force = [[float(_) * HARTREE2EV_PER_BOHR2ANG for _ in atom.split()[3:6]] for atom in force_content] # convert to eV/angstrom
         atom_forces = list(zip([atom.split()[1] for atom in force_content], force))
         atom_forces.sort(key=lambda x: x[0])
         force = [force for _, force in atom_forces]    
@@ -259,9 +260,3 @@ def parse_stress(stress_content):
     stress = [stress_x, stress_y, stress_z]
     return {"stress": stress}
 
-def gpa2ev(stress, volume):
-    """
-    default unit in cp2k is GPa
-    virial = stress * volume
-    """
-    return np.array(stress) * volume / 160.21766208
