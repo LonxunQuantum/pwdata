@@ -8,7 +8,16 @@ Supported formats:
 - castep/md   : ``<seed>.md`` AIMD trajectory, one Image per MD step
 
 Conventions:
-- ``.castep`` values are natively in eV / Angstrom / GPa.
+- ``.castep`` values are natively in eV / Angstrom / GPa. Both the modern
+  markers (``Final energy, E = ...``, ``Cartesian components of stress
+  tensor (GPa)``) and the older CASTEP <= 6.x / Materials Studio markers
+  (``Final energy = ...``, ``Cartesian components (GPa)``) are recognised.
+- One Image is emitted per step that carries an energy AND a complete force
+  table (older versions print per-iteration energies several times during
+  the cut-off convergence sweep but forces only for the final structure, so
+  energy-only intermediates are not emitted); a pending energy-only step is
+  emitted at end of file as a structural salvage image. Positions are taken
+  from the last ``Cell Contents`` table (older versions print it once).
 - ``.geom`` and ``.md`` values are in atomic units (Hartree / Bohr); both the
   classic tag layout (``<-- E``, ``<-- h``, ``<-- R``, ``<-- F``, ``<-- S``)
   and the restructured layout of newer CASTEP versions (``BEGIN header`` /
@@ -288,11 +297,13 @@ class CASTEPSCF(object):
         cur_iteration = 0
 
         def finalize_pending():
-            nonlocal cur_unconverged, next_unconverged
+            nonlocal cur_energy, cur_forces, cur_stress, cur_unconverged
             self._finalize(lattice, species_list, frac_positions, cur_energy,
                            cur_forces, cur_stress, cur_unconverged, cur_iteration)
-            cur_unconverged = next_unconverged
-            next_unconverged = False
+            cur_energy = None
+            cur_forces = None
+            cur_stress = None
+            cur_unconverged = False
 
         for idx, line in tqdm(enumerate(castep_contents), total=len(castep_contents), desc="Processing data"):
             if "SCF not converged" in line:
@@ -344,9 +355,14 @@ class CASTEPSCF(object):
                 if rows:
                     species_list = [row[0] for row in rows]
                     frac_positions = np.array([row[1] for row in rows])
-            elif "Final energy, E" in line:
-                if cur_energy is not None:
+            elif "Final energy" in line:
+                # covers both the modern 'Final energy, E = ...' and the old
+                # CASTEP <= 6.x 'Final energy = ...'; a pending step is only
+                # emitted once it carries an energy AND a complete force table
+                if cur_energy is not None and cur_forces is not None:
                     finalize_pending()
+                cur_unconverged = next_unconverged
+                next_unconverged = False
                 numbers = NUMBER_PATTERN.findall(line)
                 cur_energy = float(numbers[0]) if numbers else None
                 cur_forces = None
@@ -373,7 +389,9 @@ class CASTEPSCF(object):
                     j += 1
                 if len(forces) == target:
                     cur_forces = np.array(forces)
-            elif "Cartesian components of stress tensor (GPa)" in line:
+            elif "Cartesian components" in line and "(GPa)" in line:
+                # covers both the modern 'Cartesian components of stress tensor
+                # (GPa)' and the old CASTEP <= 6.x 'Cartesian components (GPa)'
                 # 3 rows, each carrying the 3 stress components after the axis label
                 stress_rows = []
                 j = idx + 1
@@ -384,4 +402,7 @@ class CASTEPSCF(object):
                     j += 1
                 if len(stress_rows) == 3:
                     cur_stress = np.array(stress_rows)
-        finalize_pending()
+                    if cur_energy is not None and cur_forces is not None:
+                        finalize_pending()    # stress table closes the step
+        if cur_energy is not None:
+            finalize_pending()    # salvage an energy-only step at end of file
