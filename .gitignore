@@ -9,3 +9,7 @@ tmp.py
 examples/test_workdir*
 examples/omol_data/*.aselmdb-lock
 pwdata/test/test_tmp
+docs/*
+pwdata/electrolytes/*
+pwdata/fragment_charge.py
+tests/*

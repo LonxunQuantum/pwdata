@@ -55,32 +55,45 @@ def get_xyz_content(image_data:Image):
     xyz_content +="%d\n" % image_data.atom_nums
     # data_name.write("Iteration: %s\n" % image_data.iteration)
     has_bec = image_data.bec is not None and len(image_data.bec) > 0
+    has_fragment = image_data.fragment is not None and len(image_data.fragment) > 0
+    has_charge = image_data.charge is not None and len(image_data.charge) > 0
     properties_head = "Properties=species:S:1:pos:R:3:"
     properties_head += "bec:R:9:" if has_bec else ""
     properties_head += "force:R:3"
+    properties_head += ":fragment:I:1" if has_fragment else ""
+    properties_head += ":charge:R:1" if has_charge else ""
     output_head = 'Lattice="%.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f" {} pbc="T T T" energy={} '.format(properties_head, image_data.Ep)
     output_extended = (image_data.lattice[0][0], image_data.lattice[0][1], image_data.lattice[0][2], 
                         image_data.lattice[1][0], image_data.lattice[1][1], image_data.lattice[1][2], 
                         image_data.lattice[2][0], image_data.lattice[2][1], image_data.lattice[2][2])
     if image_data.virial is not None and len(image_data.virial) > 0:
-        output_head += 'virial="%.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f"'
+        output_head += 'virial="%.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f" '
         virial = image_data.get_virial()
         output_extended += (virial[0][0], virial[0][1], virial[0][2], 
                             virial[1][0], virial[1][1], virial[1][2], 
                             virial[2][0], virial[2][1], virial[2][2])
+    if image_data.fragment_charge_status is not None:
+        output_head += "fragment_charge_status={} ".format(image_data.fragment_charge_status)
     output_head += '\n'
     xyz_content += output_head % output_extended
 
     for j in range(image_data.atom_nums):
+        properties_format = "%s"
+        properties = [elements[image_data.atom_types_image[j]], image_data.position[j][0], image_data.position[j][1], image_data.position[j][2]]
+        properties_format += " %14.8f %14.8f %14.8f"
         if has_bec:
-            properties_format = "%s" + " %14.8f" * 15 + "\n"
-            properties = (elements[image_data.atom_types_image[j]], image_data.position[j][0], image_data.position[j][1], image_data.position[j][2],
-                          *image_data.bec[j].reshape(-1), image_data.force[j][0], image_data.force[j][1], image_data.force[j][2])
-        else:
-            properties_format = "%s %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f\n"
-            properties = (elements[image_data.atom_types_image[j]], image_data.position[j][0], image_data.position[j][1], image_data.position[j][2], 
-                          image_data.force[j][0], image_data.force[j][1], image_data.force[j][2])
-        xyz_content += properties_format % properties
+            properties_format += " " + " %14.8f" * 9
+            properties.extend(image_data.bec[j].reshape(-1))
+        properties_format += " %14.8f %14.8f %14.8f"
+        properties.extend([image_data.force[j][0], image_data.force[j][1], image_data.force[j][2]])
+        if has_fragment:
+            properties_format += " %d"
+            properties.append(image_data.fragment[j])
+        if has_charge:
+            properties_format += " %14.8f"
+            properties.append(image_data.charge[j])
+        properties_format += "\n"
+        xyz_content += properties_format % tuple(properties)
     return xyz_content
 
 def read_structures(
@@ -142,11 +155,14 @@ def read_one_structures_from_lines(lines:list[str]):
     result_dict = {key.lower(): value.strip('"') for key, value in matches}
     image.Ep = float(result_dict["energy"])
     properties = result_dict["properties"].split(":")
-    atom_types_image, postion, force, bec = read_properties_data(image.atom_nums, properties, lines[1:])
+    atom_types_image, postion, force, bec, fragment, charge = read_properties_data(image.atom_nums, properties, lines[1:])
     image.force = force
     image.position = postion
     image.atom_types_image = atom_types_image
     image.bec = bec
+    image.fragment = fragment
+    image.charge = charge
+    image.fragment_charge_status = result_dict.get("fragment_charge_status")
     lattice = [float(i) for i in result_dict["lattice"].split()]
     assert len(lattice) == 9, "lattice in extxyz file should has 9 elements"
     image.lattice = np.array(lattice).reshape(-1, 3)
@@ -190,6 +206,10 @@ def read_properties_data(
     assert force_key in property_map, "force or forces property is required in extxyz file"
     if "bec" in property_map:
         assert property_map["bec"][1] == 9, "bec in extxyz file should has 9 elements per atom"
+    if "fragment" in property_map:
+        assert property_map["fragment"][1] == 1, "fragment in extxyz file should has 1 element per atom"
+    if "charge" in property_map:
+        assert property_map["charge"][1] == 1, "charge in extxyz file should has 1 element per atom"
 
     species_offset, _ = property_map["species"]
     pos_offset, pos_size = property_map["pos"]
@@ -198,11 +218,15 @@ def read_properties_data(
     assert force_size == 3, "force in extxyz file should has 3 elements per atom"
 
     bec_offset = property_map["bec"][0] if "bec" in property_map else None
+    fragment_offset = property_map["fragment"][0] if "fragment" in property_map else None
+    charge_offset = property_map["charge"][0] if "charge" in property_map else None
     assert num_atom == len(lines)
     type_list = []
     force = []
     position= []
     bec = [] if bec_offset is not None else None
+    fragment = [] if fragment_offset is not None else None
+    charge = [] if charge_offset is not None else None
     for line in lines:
         data = line.split()
         type_list.append(ELEMENTTABLE[data[species_offset]])
@@ -210,9 +234,15 @@ def read_properties_data(
         position.append([float(data[pos_offset]), float(data[pos_offset + 1]), float(data[pos_offset + 2])])
         if bec_offset is not None:
             bec.append([float(data[bec_offset + i]) for i in range(9)])
+        if fragment_offset is not None:
+            fragment.append(int(data[fragment_offset]))
+        if charge_offset is not None:
+            charge.append(float(data[charge_offset]))
     type_list = np.array(type_list) #.reshape(-1, 1)
     position = np.array(position)
     force = np.array(force)
     bec = np.array(bec).reshape(num_atom, 9) if bec is not None else None
-    return type_list, position, force, bec
+    fragment = np.array(fragment, dtype=int) if fragment is not None else None
+    charge = np.array(charge, dtype=float) if charge is not None else None
+    return type_list, position, force, bec, fragment, charge
 
