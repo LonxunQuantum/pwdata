@@ -8,6 +8,7 @@ from pwdata.build.supercells import make_supercell
 from pwdata.pertub.perturbation import perturb_structure
 from pwdata.pertub.scale import scale_cell
 from pwdata.utils.constant import FORMAT, ELEMENTTABLE, get_atomic_name_from_number
+from pwdata.castepdata import looks_like_castep_traj
 from pwdata.image import Image
 from collections import Counter
 from ase.build import general_surface
@@ -24,7 +25,7 @@ def do_convert_config(input_file:str,
                     direct:bool = True): # True: save as fractional coordinates, False for cartesian coordinates
     image = Config(data_path=input_file, format=input_format, atom_names=atom_types)
     if output_format is None:
-        output_format = FORMAT.pwmat_config if image.format == FORMAT.cp2k_scf else image.format
+        output_format = FORMAT.pwmat_config if image.format in [FORMAT.cp2k_scf, FORMAT.castep_scf] else image.format
     if savename is None:
         savename = FORMAT.get_filename_by_format(output_format)
 
@@ -47,9 +48,9 @@ def do_scale_cell(input_file:str,
         scale_factor = [scale_factor]
     image = Config(data_path=input_file, format=input_format, atom_names=atom_types)
     if output_format is None:
-        output_format = FORMAT.pwmat_config if image.format == FORMAT.cp2k_scf else image.format
+        output_format = FORMAT.pwmat_config if image.format in [FORMAT.cp2k_scf, FORMAT.castep_scf] else image.format
     if savename is None:
-        savename = FORMAT.get_filename_by_format(image.format)
+        savename = FORMAT.get_filename_by_format(output_format)
     for idx, factor in enumerate(scale_factor):
         scaled_structs = scale_cell(image, factor)
         scaled_structs.to(data_path = os.path.dirname(os.path.abspath(savename)),
@@ -103,16 +104,22 @@ def do_surface(input_file:str,
         for ii in miller:
             miller_str += str(ii)
         tmp_file = f"{prefix_random}-surf-{miller_str}-POSCAR"
+        # general_surface expects an ASE Atoms object, convert from pymatgen
+        ss_atoms = AseAtomsAdaptor.get_atoms(ss)
+        # a vacuum is required, otherwise the slab cell has a zero z-vector and
+        # cannot be written; '-v/--vacuum_max' is the vacuum thickness used
+        # when '-u/--vacuum_min' is not given
+        vacuum = vacuum_min if vacuum_min is not None else vacuum_max
         # slabgen = SlabGenerator(ss, miller, z_min, 1e-3)
         if layer_num is not None:
             slab = general_surface.surface(
-                ss, indices=miller, vacuum=vacuum_min, layers=layer_num
+                ss_atoms, indices=miller, vacuum=vacuum, layers=layer_num
             )
         else:
             # build slab according to z_min value
             for layer_numb in range(1, max_layer_numb + 1):
                 slab = general_surface.surface(
-                    ss, indices=miller, vacuum=vacuum_min, layers=layer_numb
+                    ss_atoms, indices=miller, vacuum=vacuum, layers=layer_numb
                 )
                 if slab.cell.lengths()[-1] >= z_min:
                     break
@@ -126,9 +133,9 @@ def do_surface(input_file:str,
         else:
             scaled_structs = image
         if output_format is None:
-            output_format = FORMAT.pwmat_config if image.format == FORMAT.cp2k_scf else image.format
+            output_format = FORMAT.pwmat_config if image.format in [FORMAT.cp2k_scf, FORMAT.castep_scf] else image.format
         if savename is None:
-            savename = FORMAT.get_filename_by_format(image.format)
+            savename = FORMAT.get_filename_by_format(output_format)
         data_name = f"surf-{miller}-super-{os.path.basename(savename)}" if supercell_matrix is not None else f"surf-{miller}-{os.path.basename(savename)}"
         scaled_structs.to(data_path = os.path.dirname(os.path.abspath(savename)),
                           data_name = data_name,
@@ -153,9 +160,9 @@ def do_super_cell(input_file:str,
     image = Config(data_path=input_file, format=input_format, atom_names=atom_types)
     scaled_structs = make_supercell(image, supercell_matrix, pbc=pbc, wrap=wrap, tol=tol)
     if output_format is None:
-        output_format = FORMAT.pwmat_config if image.format == FORMAT.cp2k_scf else image.format
+        output_format = FORMAT.pwmat_config if image.format in [FORMAT.cp2k_scf, FORMAT.castep_scf] else image.format
     if savename is None:
-        savename = FORMAT.get_filename_by_format(image.format)
+        savename = FORMAT.get_filename_by_format(output_format)
     scaled_structs.to(data_path = os.path.dirname(os.path.abspath(savename)),
           data_name = os.path.basename(savename),
           format = output_format,
@@ -185,7 +192,7 @@ def do_perturb(input_file:str,
 
     perturb_files = []
     if output_format is None:
-        output_format = FORMAT.pwmat_config if image.format == FORMAT.cp2k_scf else image.format
+        output_format = FORMAT.pwmat_config if image.format in [FORMAT.cp2k_scf, FORMAT.castep_scf] else image.format
     for tmp_perturbed_idx, tmp_pertubed_struct in enumerate(perturbed_structs):
         tmp_pertubed_struct.to(data_path = save_path,
                                 data_name = "{}_{}".format(tmp_perturbed_idx, save_name_prefix),
@@ -277,6 +284,9 @@ def search_images(input_list:list[str], input_format:str = None):
     data_path[FORMAT.deepmd_npy] = []
     data_path[FORMAT.deepmd_raw] = []
     data_path[FORMAT.meta] = []
+    data_path[FORMAT.castep_scf] = []
+    data_path[FORMAT.castep_geom] = []
+    data_path[FORMAT.castep_md] = []
     data_path[FORMAT.traj] = []
     for workDir in input_list:
         workDir = os.path.abspath(workDir)
@@ -286,9 +296,9 @@ def search_images(input_list:list[str], input_format:str = None):
             if input_format is not None:
                 _data_list = search_by_format(workDir, input_format)
                 if len(_data_list) > 0:
-                    data_path[input_format].extend(search_by_format(workDir, input_format))
+                    data_path[input_format].extend(_data_list)
             else:
-                for _format in [FORMAT.pwmlff_npy, FORMAT.extxyz, FORMAT.deepmd_npy, FORMAT.deepmd_raw, FORMAT.meta]:
+                for _format in [FORMAT.pwmlff_npy, FORMAT.extxyz, FORMAT.deepmd_npy, FORMAT.deepmd_raw, FORMAT.meta, FORMAT.castep_scf, FORMAT.castep_geom, FORMAT.castep_md]:
                     _data_list = search_by_format(workDir, _format)
                     if len(_data_list) > 0:
                         data_path[_format].extend(_data_list)
@@ -312,6 +322,9 @@ def search_by_format(workDir, format):
     data_path[FORMAT.deepmd_npy] = []
     data_path[FORMAT.deepmd_raw] = []
     data_path[FORMAT.meta] = []
+    data_path[FORMAT.castep_scf] = []
+    data_path[FORMAT.castep_geom] = []
+    data_path[FORMAT.castep_md] = []
     if '.xyz' in os.path.basename(workDir):
         data_path[FORMAT.extxyz].append(workDir)
     elif '.aselmdb' in os.path.basename(workDir):
@@ -349,7 +362,20 @@ def search_by_format(workDir, format):
                     if '.aselmdb' == ext:
                         data_path[FORMAT.meta].append(os.path.join(root, file))
                         # break
-        
+
+        if format in [FORMAT.castep_scf, FORMAT.castep_geom, FORMAT.castep_md]:
+            ext = ".castep" if format == FORMAT.castep_scf else (".geom" if format == FORMAT.castep_geom else ".md")
+            for root, dirs, files in os.walk(workDir):
+                for file in files:
+                    if not file.endswith(ext):
+                        continue
+                    file_path = os.path.join(root, file)
+                    # '.md' also matches markdown files; keep only files that
+                    # actually look like CASTEP trajectory output
+                    if ext != ".castep" and not looks_like_castep_traj(file_path):
+                        continue
+                    data_path[format].append(file_path)
+
     return data_path[format]
 
 

@@ -1,0 +1,81 @@
+                            Welcome to CASTEP version 19.1
+              (hand-crafted two-step geometry-optimisation fixture for pwdata)
+
+Calculation parameters
+----------------------
+task                        : geometryoptimization
+functional                  : pbe
+cut_off_energy              : 500.00000000 eV
+
+                              --------------------
+                              General Information
+                              --------------------
+
+Number of atoms               : 6
+Number of species             : 2
+
+  ----------------------------------------------
+     BFGS: starting iteration    1 with trial step length = 0.100000
+  ----------------------------------------------
+
+                              --------------------
+                              Unit Cell
+                              --------------------
+        Real Lattice(A)                      Reciprocal Lattice(1/A)
+     4.233417687224   0.000000000000   0.000000000000    1.480099230289   0.000000000000   0.000000000000
+     0.000000000000   4.233417687224   0.000000000000    0.000000000000   1.480099230289   0.000000000000
+     0.000000000000   0.000000000000   4.233417687224    0.000000000000   0.000000000000   1.480099230289
+
+                       Cell Contents
+                       -------------
+                       xxxxxxxxxxxxxxxxxxxxxx
+                       x  Element  Atom        Fractional coordinates of atoms  x
+                       x  Number   Count          u          v          w  x
+                       x-----------------------------------------------------------x
+                       x  Si        1          0.000000  0.000000  0.000000  x
+                       x  Si        2          0.500000  0.500000  0.500000  x
+                       x  O         1          0.500000  0.000000  0.000000  x
+                       x  O         2          0.000000  0.500000  0.000000  x
+                       x  O         3          0.000000  0.000000  0.500000  x
+                       x  O         4          0.500000  0.500000  0.000000  x
+                       xxxxxxxxxxxxxxxxxxxxxx
+
+                              ----------------------
+                              SCF loop
+                              ----------------------
+
+      SCF loop             Energy             Fermi
+      Energy gain (eV)     energy (eV)        energy (eV)
+      ------------------   ----------------   ---------------
+      Initial             -598.734992314      5.286231
+      1                   -599.863715349      5.386347
+      Final               -600.000000000000      5.429120
+
+  Final energy, E             = -600.00000000     eV
+  Final free energy (E-TS)    = -600.00000000     eV
+
+                              ----------------------
+                              Forces
+                              ----------------------
+     *                     Cartesian components (eV/A)   *
+     *                         x            y            z  *
+     *
+
+     * Si               1       0.010000      -0.020000      0.030000  *
+     * Si               2      -0.010000       0.020000     -0.030000  *
+     * O                1       0.020000       0.000000     -0.010000  *
+     * O                2      -0.020000       0.000000      0.010000  *
+     * O                3       0.000000       0.010000      0.020000  *
+     * O                4       0.000000      -0.010000     -0.020000  *
+     *
+     =========================================================================
+  ----------------------------------------------
+     BFGS: starting iteration    2 with trial step length = 0.100000
+  ----------------------------------------------
+
+     Warning: SCF not converged after maximum number of cycles
+
+  ----------------------------------------------
+     Geometry optimisation finished without reaching convergence
+  ----------------------------------------------
+

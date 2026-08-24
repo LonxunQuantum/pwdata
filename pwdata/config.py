@@ -13,6 +13,7 @@ from pwdata.atomconfig import CONFIG
 from pwdata.dump import DUMP
 from pwdata.lammpsdata import LMP
 from pwdata.cp2kdata import CP2KMD, CP2KSCF
+from pwdata.castepdata import CASTEPSCF, CASTEPGEOM, CASTEPMD, looks_like_castep_traj
 from pwdata.deepmd import DPNPY, DPRAW
 from pwdata.pwmlff import PWNPY
 from pwdata.movement_saver import save_to_movement
@@ -56,6 +57,12 @@ class Save_Data(object):
                 self.image_data = CP2KMD(data_path)
             elif format.lower() == 'cp2k/scf':
                 self.image_data = CP2KSCF(data_path)
+            elif format.lower() == 'castep/scf':
+                self.image_data = CASTEPSCF(data_path)
+            elif format.lower() == 'castep/geom':
+                self.image_data = CASTEPGEOM(data_path)
+            elif format.lower() == 'castep/md':
+                self.image_data = CASTEPMD(data_path)
             elif format.lower() == 'deepmd/npy':
                 self.image_data = DPNPY(data_path)
             elif format.lower() == 'deepmd/raw':
@@ -192,6 +199,12 @@ class Config(object):
                 image = CP2KMD(data_path).image_list[index]
             elif format.lower() == 'cp2k/scf':
                 image = CP2KSCF(data_path).image_list
+            elif format.lower() == 'castep/scf':
+                image = CASTEPSCF(data_path).image_list[index]
+            elif format.lower() == 'castep/geom':
+                image = CASTEPGEOM(data_path).image_list[index]
+            elif format.lower() == 'castep/md':
+                image = CASTEPMD(data_path).image_list[index]
             elif format.lower() == 'deepmd/npy':
                 image = DPNPY(data_path).image_list[index]
             elif format.lower() == 'deepmd/raw':
@@ -292,7 +305,26 @@ def string2index(string: str) -> Union[int, slice, str]:
     i += (3 - len(i)) * [None]
     return slice(*i)
 
-def infer_format(data_path: str, pbc = None, atom_names = None, index = ':', **kwargs):  
+def infer_format(data_path: str, pbc = None, atom_names = None, index = ':', **kwargs):
+    # CASTEP output files are probed by extension first, so the parsers never
+    # run on foreign files and foreign probing never runs on CASTEP files;
+    # .md/.geom files must pass a cheap content sniff so markdown files etc.
+    # are not parsed at all
+    if isinstance(data_path, str) and os.path.isfile(data_path):
+        lower = data_path.lower()
+        if lower.endswith('.castep') or \
+           ((lower.endswith('.geom') or lower.endswith('.md')) and looks_like_castep_traj(data_path)):
+            try:
+                if lower.endswith('.castep'):
+                    image = CASTEPSCF(data_path).image_list[index]
+                    return image, FORMAT.castep_scf
+                if lower.endswith('.geom'):
+                    image = CASTEPGEOM(data_path).image_list[index]
+                    return image, FORMAT.castep_geom
+                image = CASTEPMD(data_path).image_list[index]
+                return image, FORMAT.castep_md
+            except Exception as e:
+                pass
     try:
         image = MOVEMENT(data_path).image_list[index]
         return image, FORMAT.pwmat_movement

@@ -123,6 +123,9 @@ class FORMAT:
     lammps_dump="lammps/dump"
     cp2k_md="cp2k/md"
     cp2k_scf="cp2k/scf"
+    castep_scf="castep/scf"
+    castep_geom="castep/geom"
+    castep_md="castep/md"
     pwmlff_npy="pwmlff/npy"
     pwmlff_npy_name="PWdata"
     deepmd_npy="deepmd/npy"
@@ -130,9 +133,9 @@ class FORMAT:
     extxyz="extxyz"
     extxyz_name="extxyz.xyz"
     meta = "meta"
-    
-    support_config_format = [pwmat_config, vasp_poscar, lammps_lmp, cp2k_scf]
-    support_images_format = [pwmat_movement, vasp_outcar, lammps_dump, cp2k_md, pwmlff_npy, deepmd_npy, deepmd_raw, extxyz, meta]
+
+    support_config_format = [pwmat_config, vasp_poscar, lammps_lmp, cp2k_scf, castep_scf]
+    support_images_format = [pwmat_movement, vasp_outcar, lammps_dump, cp2k_md, castep_geom, castep_md, pwmlff_npy, deepmd_npy, deepmd_raw, extxyz, meta]
 
     @staticmethod
     def get_filename_by_format(input_format:str):
