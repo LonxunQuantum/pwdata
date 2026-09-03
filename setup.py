@@ -11,7 +11,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pwdata", 
-    version="0.5.9.dev0",
+    version="0.5.10",
     author="LonxunQuantum",
     author_email="lonxun@pwmat.com",
     description="pwdata is a data pre-processing tool for MatPL, which can be used to extract features and labels. It also provides convenient interfaces for data conversion between different software.",
