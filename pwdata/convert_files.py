@@ -3,6 +3,7 @@ import sys
 import glob
 import numpy as np
 import random
+import tempfile
 from pwdata.config import Config
 from pwdata.build.supercells import make_supercell
 from pwdata.pertub.perturbation import perturb_structure
@@ -11,9 +12,10 @@ from pwdata.utils.constant import FORMAT, ELEMENTTABLE, get_atomic_name_from_num
 from pwdata.castepdata import looks_like_castep_traj
 from pwdata.image import Image
 from collections import Counter
+from ase import Atoms
 from ase.build import general_surface
 from ase.db.row import AtomsRow
-from pwdata.fairchem.datasets.ase_datasets import AseDBDataset
+from pwdata.fairchem.datasets.ase_datasets import AseDBDataset, LMDBDatabase
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing
 from tqdm import tqdm
@@ -243,8 +245,73 @@ param {*} data_shuffle
 return {*}
 author: wuxingxing
 '''
+def image_to_atomrow(image):
+    if image.Ep is None:
+        raise ValueError("META output requires energy for every image")
+    if image.force is None:
+        raise ValueError("META output requires forces for every image")
+    positions = image.position
+    if not image.cartesian:
+        positions = np.dot(positions, image.lattice)
+    atoms = Atoms(
+        positions=positions,
+        numbers=image.atom_types_image,
+        cell=image.lattice,
+        pbc=image.pbc,
+    )
+    atom_row = AtomsRow(atoms)
+    atom_row.energy = image.Ep
+    atom_row.force = image.force
+    atom_row.forces = image.force
+    if image.virial is not None:
+        volume = image.get_volume()
+        if volume == 0:
+            raise ValueError("Cannot write virial to META format for a zero-volume cell")
+        virial = np.asarray(image.virial).reshape(3, 3)
+        if not np.allclose(virial, virial.T, rtol=1e-7, atol=1e-8):
+            raise ValueError("META output requires a symmetric virial tensor")
+        virial = (virial + virial.T) / 2
+        stress = -virial / volume
+        atom_row.stress = np.array([
+            stress[0, 0], stress[1, 1], stress[2, 2],
+            stress[1, 2], stress[0, 2], stress[0, 1],
+        ])
+    return atom_row
+
+
+def save_to_meta(savepath, images, data_shuffle=False):
+    os.makedirs(savepath, exist_ok=True)
+    output_file = os.path.join(savepath, FORMAT.meta_name)
+    if os.path.exists(output_file):
+        raise FileExistsError("META output already exists: {}".format(output_file))
+    output_images = list(images)
+    if data_shuffle:
+        random.Random(2024).shuffle(output_images)
+    descriptor, temporary_file = tempfile.mkstemp(
+        prefix=".dataset-", suffix=".aselmdb", dir=savepath
+    )
+    os.close(descriptor)
+    os.remove(temporary_file)
+    try:
+        with LMDBDatabase(filename=temporary_file, readonly=False) as database:
+            for index, image in enumerate(tqdm(output_images, desc="writing META")):
+                database._write(
+                    image_to_atomrow(image),
+                    key_value_pairs={},
+                    data={"idx": index},
+                )
+        os.replace(temporary_file, output_file)
+    finally:
+        for path in (temporary_file, temporary_file + "-lock"):
+            if os.path.exists(path):
+                os.remove(path)
+    return output_file
+
+
 def save_images(savepath, image_data, output_format, data_shuffle=False, merge=True):
-    if merge is True and output_format == FORMAT.extxyz:
+    if merge is True and output_format == FORMAT.meta:
+        save_to_meta(savepath, image_data.images, data_shuffle)
+    elif merge is True and output_format == FORMAT.extxyz:
         save_dir = savepath
         image_data.to(
                         data_path=save_dir,

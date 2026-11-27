@@ -1,5 +1,4 @@
 import numpy as np
-import re
 import os, glob
 from tqdm import tqdm
 from pwdata.image import Image
@@ -85,10 +84,6 @@ class META(object):
         """处理每个 atom_list 并转换为对象列表"""
         return [to_image(Atoms) for Atoms in atom_list]
 
-# MPtrj LMDB stores stress in kbar rather than eV/Å³
-# 1 kbar = 6.241509e-4 eV/Å³
-KBAR_TO_EV_PER_A3 = 6.241509e-4
-
 def load_and_query_db(db_address, atom_types, query, filter_with_elements):
     # 加载数据库
     try:
@@ -109,15 +104,6 @@ def load_and_query_db(db_address, atom_types, query, filter_with_elements):
         else:  # query is not None and atom_types is None
             atom_list.extend(list(dbs.select(query)))
 
-    # MPtrj 系列数据集 stress 单位为 kbar，需转为 eV/Å³
-    if re.search(r'mptrj', db_address, re.IGNORECASE):
-        for atoms in atom_list:
-            try:
-                stress_val = atoms.stress
-                if stress_val is not None:
-                    atoms.stress = np.array(stress_val, dtype=float) * KBAR_TO_EV_PER_A3
-            except (AttributeError, TypeError):
-                pass
     return atom_list
 
 def query_fun(row, elements):

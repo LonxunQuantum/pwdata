@@ -12,9 +12,9 @@ from tqdm import tqdm
 import numpy as np
 
 def MPjson2lmdb():
-    mp_file = "/data/home/wuxingxing/codespace/pwdata_dev/examples/mp_data/mptest.json"
-    # mpjson = "/share/public/PWMLFF_test_data/eqv2-models/datasets/MPtrj/MPtrj_2022.9_full.json" 12G too big
-    save_file = "/data/home/wuxingxing/codespace/pwdata_dev/examples/mp_data/mpjson.aselmdb"
+    # mp_file = "/data/home/wuxingxing/codespace/pwdata_dev/examples/mp_data/mptest.json"
+    mp_file = "/data/public/wuxingxing/MPtrj/MPtrj_2022.9_full.json"#  12G too big
+    save_file = "/data/public/wuxingxing/MPtrj/mptrj-Ep-uncorrected.aselmdb"
     matjson = json.load(open(mp_file))
     db = LMDBDatabase(filename=save_file, readonly=False)
     for key_1, val_1 in tqdm(matjson.items(), total=len(matjson.keys())):
@@ -39,12 +39,12 @@ def cvt_mpdict_2_atomrow(config:dict):
     stress = read_from_dict('stress', config, require=True)
     atom_rows.stress = [stress[0][0],stress[1][1],stress[2][2],stress[1][2],stress[0][2],stress[0][1]]
     force = read_from_dict('force', config, require=True)
-    energy = read_from_dict('corrected_total_energy', config, require=True)
+    energy = read_from_dict('uncorrected_total_energy', config, require=True)
     atom_rows.__setattr__('force',  force)
     atom_rows.__setattr__('energy', energy)
     data = {}
     data['uncorrected_total_energy'] = read_from_dict('uncorrected_total_energy', config, default=None)
-    data['corrected_total_energy'] = read_from_dict('uncorrected_total_energy', config, default=None)
+    data['corrected_total_energy'] = read_from_dict('corrected_total_energy', config, default=None)
     data['energy_per_atom'] = read_from_dict('energy_per_atom', config, default=None)
     data['ef_per_atom'] = read_from_dict('ef_per_atom', config, default=None)
     data['e_per_atom_relaxed'] = read_from_dict('e_per_atom_relaxed', config, default=None)

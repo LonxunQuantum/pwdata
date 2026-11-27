@@ -38,6 +38,7 @@ class FORMAT:
     extxyz="extxyz"
     extxyz_name="extxyz.xyz"
     meta = "meta"
+    meta_name = "dataset.aselmdb"
     traj = "traj"
 
     support_config_format = [pwmat_config, vasp_poscar, lammps_lmp, cp2k_scf, castep_scf]
@@ -62,6 +63,8 @@ class FORMAT:
             return FORMAT.pwmlff_npy_name
         elif input_format == FORMAT.extxyz:
             return FORMAT.extxyz_name
+        elif input_format == FORMAT.meta:
+            return FORMAT.meta_name
         else:
             raise ValueError("Unknown format: {}".format(input_format))
 

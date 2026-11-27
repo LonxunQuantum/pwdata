@@ -343,7 +343,7 @@ def run_convert_configs(cmd_list:list[str]):
     parser.add_argument('-i', '--input',         type=str, required=True, nargs='+', help="The directory or file path of the datas.\nYou can also use JSON file to list all file paths in 'datapath': [], such as 'pwdata/test/meta_data.json'")
     parser.add_argument('-f', '--input_format',  type=str, required=False, default=None, help="The input file format,  if not specified, the format will be automatically inferred based on the input files. the supported format as {}".format(FORMAT.support_images_format))
     parser.add_argument('-s', '--savepath',      type=str, required=False, help="The output dir path, if not provided, the current dir will be used", default="./")
-    parser.add_argument('-o', '--output_format', type=str, required=False, default='pwmlff/npy', help="the output file format, only support the format ['pwmlff/npy','extxyz'], if not provided, the 'pwmlff/npy' format be used. ")
+    parser.add_argument('-o', '--output_format', type=str, required=False, default='pwmlff/npy', help="the output file format, only support the format ['pwmlff/npy','extxyz','meta'], if not provided, the 'pwmlff/npy' format be used. ")
     # parser.add_argument('-c', '--cartesian',  action='store_true', help="if '-c' is set, the cartesian coordinates will be used, otherwise the fractional coordinates will be used.")
     parser.add_argument('-r', '--split_rand', action='store_true', help="Whether to randomly divide the dataset into training and test sets, '-r' is randomly")
     parser.add_argument('-m', '--merge', type=int, required=False, default=1, help="if '-m 1' the output config files will save into one xyzfile. Otherwise, the out configs will be saved separately according to the structural element types. The default value is 1")
@@ -378,9 +378,11 @@ def run_convert_configs(cmd_list:list[str]):
     else:
         args.gap = f"::{args.gap}"
     # FORMAT.check_format(args.input_format, FORMAT.support_images_format)
-    FORMAT.check_format(args.output_format, [FORMAT.pwmlff_npy, FORMAT.extxyz])
+    FORMAT.check_format(args.output_format, [FORMAT.pwmlff_npy, FORMAT.extxyz, FORMAT.meta])
 
     merge = True if args.merge == 1 else False
+    if args.output_format == FORMAT.meta and not merge:
+        raise ValueError("META output requires -m 1")
     do_convert_images(input_list, args.input_format, args.savepath, args.output_format, args.split_rand, args.gap, atom_types, args.query, args.cpu_nums, merge)
 
 
